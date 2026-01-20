@@ -1,0 +1,344 @@
+{
+  "name": "Sklep MVP - Nowe Zamówienie",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nowe-zamowienie",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook Zamówienie",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "nowe-zamowienie"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Produkty",
+          "mode": "list"
+        },
+        "filterByFormula": "=OR({{ $json.produkty.map(p => `RECORD_ID()='${p.id}'`).join(',') }})"
+      },
+      "id": "airtable-1",
+      "name": "Pobierz Produkty",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [470, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIALS_ID",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sprawdź dostępność wszystkich produktów\nconst zamowienie = $('Webhook Zamówienie').first().json;\nconst produktyZBazy = $input.all();\n\nconst wynik = {\n  dostepne: true,\n  brakujace: [],\n  produktyDoZamowienia: [],\n  kwotaCalkowita: 0\n};\n\nfor (const p of zamowienie.produkty) {\n  const produktBaza = produktyZBazy.find(pb => pb.json.id === p.id);\n  \n  if (!produktBaza) {\n    wynik.dostepne = false;\n    wynik.brakujace.push({ id: p.id, powod: 'nie znaleziono' });\n    continue;\n  }\n  \n  const stanMagazynowy = produktBaza.json.fields.IloscMagazynowa || 0;\n  \n  if (stanMagazynowy < p.ilosc) {\n    wynik.dostepne = false;\n    wynik.brakujace.push({ \n      id: p.id, \n      nazwa: produktBaza.json.fields.Nazwa,\n      zamowiono: p.ilosc, \n      dostepne: stanMagazynowy \n    });\n  } else {\n    wynik.produktyDoZamowienia.push({\n      id: p.id,\n      recordId: produktBaza.json.id,\n      nazwa: produktBaza.json.fields.Nazwa,\n      ilosc: p.ilosc,\n      cena: produktBaza.json.fields.Cena,\n      nowyStanMagazynowy: stanMagazynowy - p.ilosc\n    });\n    wynik.kwotaCalkowita += (produktBaza.json.fields.Cena || 0) * p.ilosc;\n  }\n}\n\nwynik.zamowienie = zamowienie;\n\nreturn wynik;"
+      },
+      "id": "code-1",
+      "name": "Sprawdź Dostępność",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.dostepne }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-1",
+      "name": "Czy Dostępne?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Produkty",
+          "mode": "list"
+        },
+        "id": "={{ $json.recordId }}",
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "IloscMagazynowa",
+              "fieldValue": "={{ $json.nowyStanMagazynowy }}"
+            }
+          ]
+        }
+      },
+      "id": "airtable-2",
+      "name": "Aktualizuj Stan Magazynowy",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1130, 200],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIALS_ID",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj dane do utworzenia zamówienia\nconst input = $('Sprawdź Dostępność').first().json;\n\nreturn {\n  produktyIds: input.produktyDoZamowienia.map(p => p.recordId),\n  ilosciJSON: JSON.stringify(input.produktyDoZamowienia.map(p => ({ id: p.recordId, ilosc: p.ilosc }))),\n  kwota: input.kwotaCalkowita,\n  zamowienie: input.zamowienie\n};"
+      },
+      "id": "code-2",
+      "name": "Przygotuj Dane Zamówienia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Zamowienia",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "EmailGosc",
+              "fieldValue": "={{ $json.zamowienie.email }}"
+            },
+            {
+              "fieldId": "Produkty",
+              "fieldValue": "={{ $json.produktyIds }}"
+            },
+            {
+              "fieldId": "IlosciProduktow",
+              "fieldValue": "={{ $json.ilosciJSON }}"
+            },
+            {
+              "fieldId": "KwotaCalkowita",
+              "fieldValue": "={{ $json.kwota }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "nowe"
+            },
+            {
+              "fieldId": "MetodaPlatnosci",
+              "fieldValue": "={{ $json.zamowienie.metodaPlatnosci }}"
+            },
+            {
+              "fieldId": "AdresDostawy",
+              "fieldValue": "={{ $json.zamowienie.adres }}"
+            }
+          ]
+        }
+      },
+      "id": "airtable-3",
+      "name": "Utwórz Zamówienie",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1570, 200],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIALS_ID",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "sklep@twojadomena.pl",
+        "toEmail": "={{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.email }}",
+        "subject": "=Potwierdzenie zamówienia #{{ $json.fields.NumerZamowienia }}",
+        "text": "=Dziękujemy za zamówienie!\n\nNumer zamówienia: {{ $json.fields.NumerZamowienia }}\nKwota: {{ $('Przygotuj Dane Zamówienia').first().json.kwota }} zł\nMetoda płatności: {{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.metodaPlatnosci }}\n\nAdres dostawy:\n{{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.adres }}\n\n{{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.metodaPlatnosci === 'przelew' ? 'Prosimy o przelew na konto: [NUMER KONTA]\\nTytuł: Zamówienie ' + $json.fields.NumerZamowienia : 'Płatność przy odbiorze.' }}\n\nPozdrawiamy,\nSklep MVP"
+      },
+      "id": "email-1",
+      "name": "Email do Klienta",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1790, 100],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIALS_ID",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "sklep@twojadomena.pl",
+        "toEmail": "admin@twojadomena.pl",
+        "subject": "=Nowe zamówienie #{{ $('Utwórz Zamówienie').first().json.fields.NumerZamowienia }}",
+        "text": "=Otrzymałeś nowe zamówienie!\n\nNumer: {{ $('Utwórz Zamówienie').first().json.fields.NumerZamowienia }}\nEmail klienta: {{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.email }}\nKwota: {{ $('Przygotuj Dane Zamówienia').first().json.kwota }} zł\nMetoda płatności: {{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.metodaPlatnosci }}\n\nAdres dostawy:\n{{ $('Przygotuj Dane Zamówienia').first().json.zamowienie.adres }}\n\nSprawdź zamówienie w Airtable."
+      },
+      "id": "email-2",
+      "name": "Email do Admina",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1790, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIALS_ID",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"numerZamowienia\": \"{{ $('Utwórz Zamówienie').first().json.fields.NumerZamowienia }}\",\n  \"kwota\": {{ $('Przygotuj Dane Zamówienia').first().json.kwota }}\n}"
+      },
+      "id": "respond-1",
+      "name": "Odpowiedź Sukces",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2010, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Niektóre produkty są niedostępne\",\n  \"brakujace\": {{ JSON.stringify($json.brakujace) }}\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-2",
+      "name": "Odpowiedź Błąd",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1130, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Zamówienie": {
+      "main": [
+        [
+          {
+            "node": "Pobierz Produkty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pobierz Produkty": {
+      "main": [
+        [
+          {
+            "node": "Sprawdź Dostępność",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sprawdź Dostępność": {
+      "main": [
+        [
+          {
+            "node": "Czy Dostępne?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Czy Dostępne?": {
+      "main": [
+        [
+          {
+            "node": "Aktualizuj Stan Magazynowy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Odpowiedź Błąd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aktualizuj Stan Magazynowy": {
+      "main": [
+        [
+          {
+            "node": "Przygotuj Dane Zamówienia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj Dane Zamówienia": {
+      "main": [
+        [
+          {
+            "node": "Utwórz Zamówienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utwórz Zamówienie": {
+      "main": [
+        [
+          {
+            "node": "Email do Klienta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email do Admina",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email do Klienta": {
+      "main": [
+        [
+          {
+            "node": "Odpowiedź Sukces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

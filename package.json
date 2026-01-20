@@ -1,0 +1,35 @@
+{
+  "name": "sklep-mvp",
+  "version": "1.0.0",
+  "description": "Sklep internetowy MVP - produkty z Niemiec",
+  "scripts": {
+    "setup:airtable": "node setup_airtable.js",
+    "deploy:n8n": "node deploy_n8n.js",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "dotenv": "^16.6.1",
+    "lucide-react": "^0.562.0",
+    "next": "^14.2.0",
+    "posthog-js": "^1.331.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.71.1",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0"
+  }
+}

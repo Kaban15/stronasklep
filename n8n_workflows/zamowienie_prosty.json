@@ -1,0 +1,101 @@
+{
+  "name": "Sklep MVP - Zamowienie",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nowe-zamowienie",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "nowe-zamowienie"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Zamowienia",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "EmailGosc",
+              "fieldValue": "={{ $json.body.email }}"
+            },
+            {
+              "fieldId": "IlosciProduktow",
+              "fieldValue": "={{ JSON.stringify($json.body.produkty) }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "nowe"
+            },
+            {
+              "fieldId": "MetodaPlatnosci",
+              "fieldValue": "={{ $json.body.metodaPlatnosci }}"
+            },
+            {
+              "fieldId": "AdresDostawy",
+              "fieldValue": "={{ $json.body.adres }}"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Utworz Zamowienie",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, numerZamowienia: $json.id, message: 'Zamówienie utworzone' }) }}"
+      },
+      "id": "3",
+      "name": "Odpowiedz OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Utworz Zamowienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Odpowiedz OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

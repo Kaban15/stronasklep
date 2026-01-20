@@ -1,0 +1,11 @@
+# Ignoruj podczas analizy kontekstu
+node_modules/
+.next/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.git/
+*.log
+dist/
+build/
+.vercel/
