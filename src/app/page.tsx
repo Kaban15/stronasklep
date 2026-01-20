@@ -1,5 +1,5 @@
 import { pobierzProdukty, pobierzProduktyWedlugKategorii } from '@/lib/airtable'
-import ProductCard from '@/components/ProductCard'
+import ProductGrid from '@/components/ProductGrid'
 
 interface Props {
   searchParams: { kategoria?: string }
@@ -128,11 +128,7 @@ export default async function Home({ searchParams }: Props) {
 
         {/* Grid produktow */}
         {produkty.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {produkty.map(produkt => (
-              <ProductCard key={produkt.id} produkt={produkt} />
-            ))}
-          </div>
+          <ProductGrid products={produkty} />
         ) : (
           <div className="text-center py-16 bg-white rounded-lg border border-gray-100">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

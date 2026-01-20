@@ -2,7 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { useCart } from '@/hooks/use-cart'
+import { usePostHog } from 'posthog-js/react'
 import type { Produkt } from '@/lib/airtable'
 
 interface ProductCardProps {
@@ -11,6 +13,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ produkt }: ProductCardProps) {
   const { addItem } = useCart()
+  const posthog = usePostHog()
 
   const zdjecieUrl = produkt.zdjecia?.[0]?.url || '/placeholder.png'
   const niedostepny = produkt.iloscMagazynowa <= 0
@@ -29,11 +32,26 @@ export default function ProductCard({ produkt }: ProductCardProps) {
         zdjecie: zdjecieUrl,
         cenaJednostkowa
       })
+
+      // PostHog tracking
+      if (posthog) {
+        posthog.capture('add_to_cart', {
+          product_id: produkt.id,
+          product_name: produkt.nazwa,
+          price: produkt.cena,
+          quantity: 1,
+          source: 'product_card'
+        })
+      }
     }
   }
 
   return (
-    <article className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col h-full border border-gray-100">
+    <motion.article
+      className="group bg-white rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-150 overflow-hidden flex flex-col h-full border border-gray-100"
+      whileHover={{ y: -6 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+    >
       {/* Zdjecie produktu */}
       <Link href={`/produkt/${produkt.id}`} className="block relative">
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
@@ -42,7 +60,7 @@ export default function ProductCard({ produkt }: ProductCardProps) {
               src={zdjecieUrl}
               alt={produkt.nazwa}
               fill
-              className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+              className="object-contain p-4 group-hover:scale-105 transition-transform duration-200 ease-out"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (
@@ -116,18 +134,20 @@ export default function ProductCard({ produkt }: ProductCardProps) {
         </div>
 
         {/* Przycisk */}
-        <button
+        <motion.button
           onClick={handleDodaj}
           disabled={niedostepny}
-          className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-200 ${
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+          className={`w-full py-3 rounded-lg font-semibold text-sm transition-colors duration-200 ${
             niedostepny
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98] shadow-sm hover:shadow'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow'
           }`}
         >
           {niedostepny ? 'Niedostępne' : 'Dodaj do koszyka'}
-        </button>
+        </motion.button>
       </div>
-    </article>
+    </motion.article>
   )
 }
