@@ -496,34 +496,19 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* ========== SUPER WIDOCZNY ZNACZNIK ========== */}
-                <div style={{
-                  border: '5px solid red',
-                  padding: '20px',
-                  background: 'yellow',
-                  color: 'black',
-                  fontWeight: 'bold',
-                  marginTop: '20px',
-                  marginBottom: '20px'
-                }}>
-                  <div style={{ fontSize: '18px', marginBottom: '10px' }}>
-                    🎟️ TU JESTEM! WPISZ KOD POLECAJĄCY:
-                  </div>
+                {/* Kod polecający */}
+                <div className="mt-4">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-gray-400" />
+                    Masz kod polecający?
+                  </label>
                   <input
                     type="text"
                     {...register('kodRabatowy')}
-                    placeholder="WPISZ KOD RABATOWY NP. JAN123"
-                    style={{
-                      border: '3px solid black',
-                      width: '100%',
-                      padding: '15px',
-                      fontSize: '16px',
-                      textTransform: 'uppercase',
-                      background: 'white'
-                    }}
+                    placeholder="Wpisz kod (opcjonalnie)"
+                    className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase placeholder:normal-case"
                   />
                 </div>
-                {/* ========== KONIEC ZNACZNIKA ========== */}
 
                 {/* Przycisk */}
                 <button
