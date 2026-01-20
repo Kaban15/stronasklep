@@ -14,7 +14,8 @@ import {
   Banknote,
   Loader2,
   ShieldCheck,
-  Package
+  Package,
+  Ticket
 } from 'lucide-react'
 
 interface CheckoutFormData {
@@ -27,6 +28,7 @@ interface CheckoutFormData {
   miasto: string
   metodaPlatnosci: 'przelew' | 'przy_odbiorze'
   uwagi: string
+  kodRabatowy: string
 }
 
 const KOSZT_DOSTAWY = 15.00
@@ -85,13 +87,17 @@ export default function CheckoutPage() {
       status: 'new',
       // Dla kompatybilności z istniejącym API
       email: data.email,
+      imie: data.imie,
+      nazwisko: data.nazwisko,
       produkty: items.map(item => ({
         id: item.id,
         nazwa: item.nazwa,
         cena: item.cena,
         ilosc: item.ilosc
       })),
-      adres
+      adres,
+      // Kod polecający/rabatowy dla n8n workflow
+      uzyty_kod_rabatowy: data.kodRabatowy?.trim().toUpperCase() || undefined
     }
 
     try {
@@ -478,6 +484,20 @@ export default function CheckoutPage() {
                       <span className="font-medium text-gray-900">5.00 zł</span>
                     </div>
                   )}
+                </div>
+
+                {/* Kod rabatowy / polecający */}
+                <div className="border-t border-gray-200 mt-4 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-gray-400" />
+                    Kod polecający / rabatowy
+                  </label>
+                  <input
+                    type="text"
+                    {...register('kodRabatowy')}
+                    className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase"
+                    placeholder="np. JAN123 (opcjonalnie)"
+                  />
                 </div>
 
                 {/* Suma całkowita */}
