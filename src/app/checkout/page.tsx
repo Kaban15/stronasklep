@@ -496,19 +496,34 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Kod rabatowy / polecający - BEZPOŚREDNIO NAD PRZYCISKIEM */}
-                <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-amber-600" />
-                    Masz kod polecający?
-                  </label>
+                {/* ========== SUPER WIDOCZNY ZNACZNIK ========== */}
+                <div style={{
+                  border: '5px solid red',
+                  padding: '20px',
+                  background: 'yellow',
+                  color: 'black',
+                  fontWeight: 'bold',
+                  marginTop: '20px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ fontSize: '18px', marginBottom: '10px' }}>
+                    🎟️ TU JESTEM! WPISZ KOD POLECAJĄCY:
+                  </div>
                   <input
                     type="text"
                     {...register('kodRabatowy')}
-                    className="w-full h-12 border-2 border-gray-300 rounded-lg px-4 text-base bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 uppercase placeholder:normal-case"
-                    placeholder="Wpisz kod np. JAN123 (opcjonalnie)"
+                    placeholder="WPISZ KOD RABATOWY NP. JAN123"
+                    style={{
+                      border: '3px solid black',
+                      width: '100%',
+                      padding: '15px',
+                      fontSize: '16px',
+                      textTransform: 'uppercase',
+                      background: 'white'
+                    }}
                   />
                 </div>
+                {/* ========== KONIEC ZNACZNIKA ========== */}
 
                 {/* Przycisk */}
                 <button
