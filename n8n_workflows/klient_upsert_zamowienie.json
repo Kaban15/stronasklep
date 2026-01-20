@@ -1,0 +1,461 @@
+{
+  "name": "Sklep MVP - Klient Upsert & Zamowienie",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zamowienie-z-klientem",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook Zamowienie",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 400],
+      "webhookId": "zamowienie-z-klientem"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "filterByFormula": "={Email} = '{{ $json.body.email }}'"
+      },
+      "id": "search-klient-2",
+      "name": "Szukaj Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [320, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.id ? true : false }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-klient-3",
+      "name": "Czy Klient Istnieje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [540, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Klient istnieje - pobierz jego ID\nconst klientId = $input.first().json.id;\nconst klientEmail = $input.first().json.fields.Email;\nconst klientImie = $input.first().json.fields.Imie;\n\nreturn [{\n  json: {\n    klientId: klientId,\n    klientEmail: klientEmail,\n    klientImie: klientImie,\n    istniejacyKlient: true\n  }\n}];"
+      },
+      "id": "code-existing-4",
+      "name": "Pobierz ID Klienta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 280]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Webhook Zamowienie').item.json.body.uzyty_kod_rabatowy }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "if-kod-rabatowy-5",
+      "name": "Czy Uzyto Kod Rabatowy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [780, 520]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "filterByFormula": "={KodPolecajacyWlasny} = '{{ $('Webhook Zamowienie').item.json.body.uzyty_kod_rabatowy }}'"
+      },
+      "id": "search-polecajacy-6",
+      "name": "Szukaj Polecajacego",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1020, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generuj unikalny kod polecajacy\n// Format: 3 pierwsze litery imienia (uppercase) + 3 losowe cyfry\n\nconst webhookData = $('Webhook Zamowienie').item.json.body;\nconst imie = webhookData.imie || 'USR';\n\n// Pierwsze 3 litery imienia (lub mniej jesli imie krotsze)\nconst prefix = imie\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '') // usuń polskie znaki\n  .replace(/[^a-zA-Z]/g, '') // tylko litery\n  .substring(0, 3)\n  .toUpperCase()\n  .padEnd(3, 'X'); // dopelnij X jesli za krotkie\n\n// 3 losowe cyfry\nconst suffix = Math.floor(Math.random() * 900 + 100).toString();\n\nconst kodPolecajacy = prefix + suffix;\n\n// Sprawdz czy znaleziono polecajacego\nlet polecajacyId = null;\ntry {\n  const polecajacyData = $('Szukaj Polecajacego').item.json;\n  if (polecajacyData && polecajacyData.id) {\n    polecajacyId = polecajacyData.id;\n  }\n} catch (e) {\n  // Brak polecajacego - to OK\n}\n\nreturn [{\n  json: {\n    email: webhookData.email,\n    imie: webhookData.imie,\n    nazwisko: webhookData.nazwisko,\n    kodPolecajacy: kodPolecajacy,\n    polecajacyId: polecajacyId,\n    uzytyKodRabatowy: webhookData.uzyty_kod_rabatowy || null\n  }\n}];"
+      },
+      "id": "code-generate-7",
+      "name": "Generuj Kod Polecajacy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nowy klient bez kodu rabatowego\n// Generuj kod polecajacy bez szukania polecajacego\n\nconst webhookData = $('Webhook Zamowienie').item.json.body;\nconst imie = webhookData.imie || 'USR';\n\n// Pierwsze 3 litery imienia (uppercase)\nconst prefix = imie\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '')\n  .replace(/[^a-zA-Z]/g, '')\n  .substring(0, 3)\n  .toUpperCase()\n  .padEnd(3, 'X');\n\nconst suffix = Math.floor(Math.random() * 900 + 100).toString();\nconst kodPolecajacy = prefix + suffix;\n\nreturn [{\n  json: {\n    email: webhookData.email,\n    imie: webhookData.imie,\n    nazwisko: webhookData.nazwisko,\n    kodPolecajacy: kodPolecajacy,\n    polecajacyId: null,\n    uzytyKodRabatowy: null\n  }\n}];"
+      },
+      "id": "code-generate-no-ref-8",
+      "name": "Generuj Kod (Bez Polecajacego)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 640]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": []
+        },
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-new-client-9",
+      "name": "Polacz Dane Nowego Klienta",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1500, 580]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "Imie",
+              "fieldValue": "={{ $json.imie }}"
+            },
+            {
+              "fieldId": "Nazwisko",
+              "fieldValue": "={{ $json.nazwisko }}"
+            },
+            {
+              "fieldId": "KodPolecajacyWlasny",
+              "fieldValue": "={{ $json.kodPolecajacy }}"
+            },
+            {
+              "fieldId": "KtoPolecil",
+              "fieldValue": "={{ $json.polecajacyId ? [$json.polecajacyId] : [] }}"
+            }
+          ]
+        }
+      },
+      "id": "create-klient-10",
+      "name": "Utworz Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1720, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj dane nowego klienta do dalszego przetwarzania\nconst nowyKlient = $input.first().json;\n\nreturn [{\n  json: {\n    klientId: nowyKlient.id,\n    klientEmail: nowyKlient.fields.Email,\n    klientImie: nowyKlient.fields.Imie,\n    istniejacyKlient: false,\n    kodPolecajacy: nowyKlient.fields.KodPolecajacyWlasny\n  }\n}];"
+      },
+      "id": "code-new-client-11",
+      "name": "Przygotuj Dane Nowego Klienta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1940, 580]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": []
+        },
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-final-12",
+      "name": "Polacz Sciezki Klienta",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2160, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Zamowienia",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Klient",
+              "fieldValue": "={{ [$json.klientId] }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "Nowe"
+            },
+            {
+              "fieldId": "IlosciProduktow",
+              "fieldValue": "={{ JSON.stringify($('Webhook Zamowienie').item.json.body.produkty) }}"
+            },
+            {
+              "fieldId": "MetodaPlatnosci",
+              "fieldValue": "={{ $('Webhook Zamowienie').item.json.body.metodaPlatnosci }}"
+            },
+            {
+              "fieldId": "AdresDostawy",
+              "fieldValue": "={{ $('Webhook Zamowienie').item.json.body.adres }}"
+            },
+            {
+              "fieldId": "EmailGosc",
+              "fieldValue": "={{ $json.klientEmail }}"
+            }
+          ]
+        }
+      },
+      "id": "create-zamowienie-13",
+      "name": "Utworz Zamowienie",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [2380, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, numerZamowienia: $json.id, klientId: $('Polacz Sciezki Klienta').item.json.klientId, nowyKlient: !$('Polacz Sciezki Klienta').item.json.istniejacyKlient, message: 'Zamówienie utworzone pomyślnie' }) }}"
+      },
+      "id": "respond-ok-14",
+      "name": "Odpowiedz OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2600, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Wystąpił błąd podczas przetwarzania zamówienia', details: $json.message || 'Unknown error' }) }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "respond-error-15",
+      "name": "Odpowiedz Blad",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2600, 600]
+    }
+  ],
+  "connections": {
+    "Webhook Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Szukaj Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Szukaj Klienta": {
+      "main": [
+        [
+          {
+            "node": "Czy Klient Istnieje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Czy Klient Istnieje?": {
+      "main": [
+        [
+          {
+            "node": "Pobierz ID Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Czy Uzyto Kod Rabatowy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pobierz ID Klienta": {
+      "main": [
+        [
+          {
+            "node": "Polacz Sciezki Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Czy Uzyto Kod Rabatowy?": {
+      "main": [
+        [
+          {
+            "node": "Szukaj Polecajacego",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generuj Kod (Bez Polecajacego)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Szukaj Polecajacego": {
+      "main": [
+        [
+          {
+            "node": "Generuj Kod Polecajacy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generuj Kod Polecajacy": {
+      "main": [
+        [
+          {
+            "node": "Polacz Dane Nowego Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generuj Kod (Bez Polecajacego)": {
+      "main": [
+        [
+          {
+            "node": "Polacz Dane Nowego Klienta",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Polacz Dane Nowego Klienta": {
+      "main": [
+        [
+          {
+            "node": "Utworz Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Klienta": {
+      "main": [
+        [
+          {
+            "node": "Przygotuj Dane Nowego Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj Dane Nowego Klienta": {
+      "main": [
+        [
+          {
+            "node": "Polacz Sciezki Klienta",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Polacz Sciezki Klienta": {
+      "main": [
+        [
+          {
+            "node": "Utworz Zamowienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Odpowiedz OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": ""
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "sklep-mvp"
+  },
+  "tags": [
+    {
+      "name": "CRM",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Zamowienia",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
