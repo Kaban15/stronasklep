@@ -486,20 +486,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Kod rabatowy / polecający */}
-                <div className="border-t border-gray-200 mt-4 pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-gray-400" />
-                    Kod polecający / rabatowy
-                  </label>
-                  <input
-                    type="text"
-                    {...register('kodRabatowy')}
-                    className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase"
-                    placeholder="np. JAN123 (opcjonalnie)"
-                  />
-                </div>
-
                 {/* Suma całkowita */}
                 <div className="border-t border-gray-200 mt-4 pt-4">
                   <div className="flex justify-between items-baseline">
@@ -508,6 +494,20 @@ export default function CheckoutPage() {
                       {(sumaCalkowita + (metodaPlatnosci === 'przy_odbiorze' ? 5 : 0)).toFixed(2)} zł
                     </span>
                   </div>
+                </div>
+
+                {/* Kod rabatowy / polecający - BEZPOŚREDNIO NAD PRZYCISKIEM */}
+                <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                    <Ticket className="w-4 h-4 text-amber-600" />
+                    Masz kod polecający?
+                  </label>
+                  <input
+                    type="text"
+                    {...register('kodRabatowy')}
+                    className="w-full h-12 border-2 border-gray-300 rounded-lg px-4 text-base bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 uppercase placeholder:normal-case"
+                    placeholder="Wpisz kod np. JAN123 (opcjonalnie)"
+                  />
                 </div>
 
                 {/* Przycisk */}
