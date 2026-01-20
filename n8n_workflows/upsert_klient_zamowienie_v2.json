@@ -1,0 +1,491 @@
+{
+  "name": "Sklep - Upsert Klient & Zamowienie v2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nowe-zamowienie-v2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "nowe-zamowienie-v2"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "filterByFormula": "={Email} = '{{ $json.body.email }}'"
+      },
+      "id": "node-search-client",
+      "name": "Szukaj Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-cred",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-exists",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-exists",
+      "name": "Klient Istnieje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Klient istnieje - pobierz ID\nconst item = $input.first().json;\n\nreturn [{\n  json: {\n    klientId: item.id,\n    klientEmail: item.fields?.Email || $('Webhook').item.json.body.email,\n    istniejacy: true\n  }\n}];"
+      },
+      "id": "node-existing-client",
+      "name": "Pobierz ID Klienta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generuj unikalny kod polecajacy\n// Format: ABC123 (3 litery imienia uppercase + 3 cyfry)\n\nconst webhookData = $('Webhook').item.json.body;\nconst imie = webhookData.imie || 'USR';\n\n// Normalizuj imie - usun polskie znaki i weź 3 pierwsze litery\nconst prefix = imie\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '')\n  .replace(/[^a-zA-Z]/g, '')\n  .substring(0, 3)\n  .toUpperCase()\n  .padEnd(3, 'X');\n\n// 3 losowe cyfry (100-999)\nconst suffix = Math.floor(Math.random() * 900 + 100).toString();\n\nconst generatedRefCode = prefix + suffix;\n\nreturn [{\n  json: {\n    email: webhookData.email,\n    imie: webhookData.imie,\n    nazwisko: webhookData.nazwisko,\n    generatedRefCode: generatedRefCode,\n    uzytyKodRabatowy: webhookData.uzyty_kod_rabatowy || null\n  }\n}];"
+      },
+      "id": "node-generate-code",
+      "name": "Generuj Kod Polecajacy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-has-code",
+              "leftValue": "={{ $json.uzytyKodRabatowy }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-refcode",
+      "name": "Ma Kod Rabatowy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "filterByFormula": "={KodPolecajacyWlasny} = '{{ $json.uzytyKodRabatowy }}'"
+      },
+      "id": "node-search-referrer",
+      "name": "Szukaj Polecajacego",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1120, 340],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-cred",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj dane do utworzenia klienta z polecajacym\nconst prevData = $('Generuj Kod Polecajacy').item.json;\nconst referrerData = $input.first().json;\n\nlet polecajacyId = null;\nif (referrerData && referrerData.id) {\n  polecajacyId = referrerData.id;\n}\n\nreturn [{\n  json: {\n    email: prevData.email,\n    imie: prevData.imie,\n    nazwisko: prevData.nazwisko,\n    generatedRefCode: prevData.generatedRefCode,\n    polecajacyId: polecajacyId\n  }\n}];"
+      },
+      "id": "node-prep-with-referrer",
+      "name": "Przygotuj z Polecajacym",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj dane do utworzenia klienta BEZ polecajacego\nconst prevData = $('Generuj Kod Polecajacy').item.json;\n\nreturn [{\n  json: {\n    email: prevData.email,\n    imie: prevData.imie,\n    nazwisko: prevData.nazwisko,\n    generatedRefCode: prevData.generatedRefCode,\n    polecajacyId: null\n  }\n}];"
+      },
+      "id": "node-prep-no-referrer",
+      "name": "Przygotuj bez Polecajacego",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "empty"
+      },
+      "id": "node-merge-prep",
+      "name": "Merge Przygotowanie",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1560, 420]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "Imie",
+              "fieldValue": "={{ $json.imie }}"
+            },
+            {
+              "fieldId": "Nazwisko",
+              "fieldValue": "={{ $json.nazwisko }}"
+            },
+            {
+              "fieldId": "KodPolecajacyWlasny",
+              "fieldValue": "={{ $json.generatedRefCode }}"
+            },
+            {
+              "fieldId": "KtoPolecil",
+              "fieldValue": "={{ $json.polecajacyId ? [$json.polecajacyId] : [] }}"
+            }
+          ]
+        }
+      },
+      "id": "node-create-client",
+      "name": "Utworz Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1780, 420],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-cred",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj ID nowego klienta\nconst nowyKlient = $input.first().json;\n\nreturn [{\n  json: {\n    klientId: nowyKlient.id,\n    klientEmail: nowyKlient.fields?.Email,\n    istniejacy: false,\n    kodPolecajacy: nowyKlient.fields?.KodPolecajacyWlasny\n  }\n}];"
+      },
+      "id": "node-new-client-id",
+      "name": "ID Nowego Klienta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 420]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "empty"
+      },
+      "id": "node-merge-final",
+      "name": "Merge Klient",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Zamowienia",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Klient",
+              "fieldValue": "={{ [$json.klientId] }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "Nowe"
+            },
+            {
+              "fieldId": "IlosciProduktow",
+              "fieldValue": "={{ JSON.stringify($('Webhook').item.json.body.produkty) }}"
+            },
+            {
+              "fieldId": "MetodaPlatnosci",
+              "fieldValue": "={{ $('Webhook').item.json.body.metodaPlatnosci }}"
+            },
+            {
+              "fieldId": "AdresDostawy",
+              "fieldValue": "={{ $('Webhook').item.json.body.adres }}"
+            },
+            {
+              "fieldId": "KwotaCalkowita",
+              "fieldValue": "={{ $('Webhook').item.json.body.total }}"
+            }
+          ]
+        }
+      },
+      "id": "node-create-order",
+      "name": "Utworz Zamowienie",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [2440, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-cred",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  numerZamowienia: $json.id,\n  klientId: $('Merge Klient').item.json.klientId,\n  nowyKlient: !$('Merge Klient').item.json.istniejacy,\n  message: 'Zamówienie utworzone pomyślnie'\n}) }}"
+      },
+      "id": "node-respond-ok",
+      "name": "Odpowiedz Sukces",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2660, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Szukaj Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Szukaj Klienta": {
+      "main": [
+        [
+          {
+            "node": "Klient Istnieje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Klient Istnieje?": {
+      "main": [
+        [
+          {
+            "node": "Pobierz ID Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generuj Kod Polecajacy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pobierz ID Klienta": {
+      "main": [
+        [
+          {
+            "node": "Merge Klient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generuj Kod Polecajacy": {
+      "main": [
+        [
+          {
+            "node": "Ma Kod Rabatowy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ma Kod Rabatowy?": {
+      "main": [
+        [
+          {
+            "node": "Szukaj Polecajacego",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Przygotuj bez Polecajacego",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Szukaj Polecajacego": {
+      "main": [
+        [
+          {
+            "node": "Przygotuj z Polecajacym",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj z Polecajacym": {
+      "main": [
+        [
+          {
+            "node": "Merge Przygotowanie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj bez Polecajacego": {
+      "main": [
+        [
+          {
+            "node": "Merge Przygotowanie",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Przygotowanie": {
+      "main": [
+        [
+          {
+            "node": "Utworz Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Klienta": {
+      "main": [
+        [
+          {
+            "node": "ID Nowego Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ID Nowego Klienta": {
+      "main": [
+        [
+          {
+            "node": "Merge Klient",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Klient": {
+      "main": [
+        [
+          {
+            "node": "Utworz Zamowienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Odpowiedz Sukces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
