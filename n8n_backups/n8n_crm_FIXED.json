@@ -1,0 +1,364 @@
+{
+  "name": "CRM - Upsert Klient i Zamowienie (FIXED)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zamowienie",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
+      "webhookId": "zamowienie-crm"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Zapisz dane z webhooka do przekazania dalej\nconst inputData = items[0].json.body || items[0].json;\n\nreturn [{\n  json: {\n    webhookData: inputData,\n    email: inputData.email,\n    imie: inputData.imie,\n    nazwisko: inputData.nazwisko,\n    adres: inputData.adres,\n    produkty: inputData.produkty,\n    metodaPlatnosci: inputData.metodaPlatnosci,\n    uzyty_kod_rabatowy: inputData.uzyty_kod_rabatowy,\n    total: inputData.total\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Przygotuj Dane",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "filterByFormula": "={Email} = '{{ $json.email }}'"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Szukaj Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [540, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Klient Istnieje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// GALAZ TRUE - Klient istnieje\nconst klient = items[0].json;\n\nreturn [{\n  json: {\n    klientId: klient.id,\n    email: klient.fields?.Email,\n    nowyKlient: false,\n    // Przekaz dane z webhooka (z poprzednich kroków)\n    webhookData: klient.webhookData || {}\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Istniejacy Klient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// BEZPIECZNY KOD GENERUJĄCY - nie używa $('Webhook')\n// Pobiera dane z items[0].json\n\nlet inputData = items[0].json.body || items[0].json;\n\n// Fallback dla testów\nif (!inputData || Object.keys(inputData).length === 0) {\n  inputData = { imie: \"KLIENT\" };\n}\n\nconst imie = inputData.imie || \"KLIENT\";\nconst normalizedImie = imie\n  .toString()\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '')\n  .replace(/[^a-zA-Z0-9]/g, '')\n  .toUpperCase();\n\nconst prefix = (normalizedImie.substring(0, 3) || \"KLI\").padEnd(3, 'X');\nconst suffix = Math.floor(Math.random() * 900 + 100);\n\nreturn [{\n  json: {\n    ...inputData,\n    email: inputData.email,\n    imie: inputData.imie,\n    nazwisko: inputData.nazwisko,\n    generated_ref_code: `${prefix}${suffix}`\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Generuj Kod Polecajacy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 420]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Klienci",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "Imie",
+              "fieldValue": "={{ $json.imie }}"
+            },
+            {
+              "fieldId": "Nazwisko",
+              "fieldValue": "={{ $json.nazwisko }}"
+            },
+            {
+              "fieldId": "KodPolecajacyWlasny",
+              "fieldValue": "={{ $json.generated_ref_code }}"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Utworz Klienta",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1240, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Przygotuj ID nowego klienta\nconst nowyKlient = items[0].json;\n\nreturn [{\n  json: {\n    klientId: nowyKlient.id,\n    email: nowyKlient.fields?.Email,\n    nowyKlient: true,\n    kodPolecajacy: nowyKlient.fields?.KodPolecajacyWlasny\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000008",
+      "name": "Nowy Klient ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1480, 420]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "empty"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000009",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pobierz dane klienta i przygotuj do zamówienia\nconst klientData = items[0].json;\n\n// Pobierz oryginalne dane z webhooka przez input\nconst webhookData = klientData.webhookData || {};\n\nreturn [{\n  json: {\n    klientId: klientData.klientId,\n    email: klientData.email,\n    nowyKlient: klientData.nowyKlient,\n    produkty: webhookData.produkty || [],\n    adres: webhookData.adres || '',\n    metodaPlatnosci: webhookData.metodaPlatnosci || 'przelew',\n    total: webhookData.total || 0\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000010",
+      "name": "Przygotuj Zamowienie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1940, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appbPeVGuTpCNJ2U8",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Zamowienia",
+          "mode": "list"
+        },
+        "fields": {
+          "fieldRecord": [
+            {
+              "fieldId": "Klient",
+              "fieldValue": "={{ [$json.klientId] }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "Nowe"
+            },
+            {
+              "fieldId": "EmailGosc",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "IlosciProduktow",
+              "fieldValue": "={{ JSON.stringify($json.produkty) }}"
+            },
+            {
+              "fieldId": "MetodaPlatnosci",
+              "fieldValue": "={{ $json.metodaPlatnosci }}"
+            },
+            {
+              "fieldId": "AdresDostawy",
+              "fieldValue": "={{ $json.adres }}"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000011",
+      "name": "Utworz Zamowienie",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [2160, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, numerZamowienia: $json.id, message: 'Zamowienie utworzone' }) }}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000012",
+      "name": "Odpowiedz",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2380, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Przygotuj Dane",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj Dane": {
+      "main": [
+        [
+          {
+            "node": "Szukaj Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Szukaj Klienta": {
+      "main": [
+        [
+          {
+            "node": "Klient Istnieje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Klient Istnieje?": {
+      "main": [
+        [
+          {
+            "node": "Istniejacy Klient",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generuj Kod Polecajacy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Istniejacy Klient": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generuj Kod Polecajacy": {
+      "main": [
+        [
+          {
+            "node": "Utworz Klienta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Klienta": {
+      "main": [
+        [
+          {
+            "node": "Nowy Klient ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nowy Klient ID": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Przygotuj Zamowienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Przygotuj Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Utworz Zamowienie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utworz Zamowienie": {
+      "main": [
+        [
+          {
+            "node": "Odpowiedz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {}
+}
