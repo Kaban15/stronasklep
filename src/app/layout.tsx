@@ -11,15 +11,15 @@ import { PostHogPageView } from '@/providers/PostHogPageView'
 const inter = Inter({ subsets: ['latin', 'latin-ext'] })
 
 export const metadata: Metadata = {
-  title: 'Sklep MVP - Produkty z Niemiec',
-  description: 'Chemia gospodarcza i zabawki z Niemiec w najlepszych cenach. Import oryginalnych produktów z Niemiec - szybka wysyłka 24h.',
-  keywords: ['chemia z Niemiec', 'zabawki z Niemiec', 'import z Niemiec', 'chemia gospodarcza', 'produkty niemieckie'],
-  authors: [{ name: 'Sklep MVP' }],
+  title: 'SklepMVP - Oryginalna Chemia z Niemiec | Import DE',
+  description: 'Najlepsze proszki, płyny i środki czystości prosto z Niemiec. Persil, Ariel, Lenor. Szybka wysyłka w 24h.',
+  keywords: ['chemia z Niemiec', 'Persil', 'Ariel', 'Lenor', 'proszki do prania', 'środki czystości', 'import z Niemiec'],
+  authors: [{ name: 'SklepMVP' }],
   openGraph: {
-    title: 'Sklep MVP - Produkty z Niemiec',
-    description: 'Chemia gospodarcza i zabawki z Niemiec w najlepszych cenach',
+    title: 'SklepMVP - Oryginalna Chemia z Niemiec | Import DE',
+    description: 'Najlepsze proszki, płyny i środki czystości prosto z Niemiec. Persil, Ariel, Lenor. Szybka wysyłka w 24h.',
     url: 'https://stronasklep.vercel.app',
-    siteName: 'Sklep MVP',
+    siteName: 'SklepMVP',
     locale: 'pl_PL',
     type: 'website'
   },

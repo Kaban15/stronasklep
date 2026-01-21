@@ -52,16 +52,21 @@ export default function CheckoutPage() {
     }
   })
 
-  const metodaPlatnosci = watch('metodaPlatnosci')
+  const metodaPlatnosciWatched = watch('metodaPlatnosci')
+  // Explicit fallback to ensure correct calculation
+  const metodaPlatnosci = metodaPlatnosciWatched ?? 'przelew'
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Obliczenia cenowe
+  // Obliczenia cenowe - dynamiczne na podstawie wybranej metody płatności
   const sumaProduktow = getTotalPrice()
   const oplataPlatnosc = metodaPlatnosci === 'przy_odbiorze' ? OPLATA_POBRANIE : 0
   const sumaCalkowita = sumaProduktow + KOSZT_DOSTAWY + oplataPlatnosc
+
+  // Debug log for verification (can be removed in production)
+  // console.log('Payment method:', metodaPlatnosci, 'Fee:', oplataPlatnosc, 'Total:', sumaCalkowita)
 
   const onSubmit = async (data: CheckoutFormData) => {
     // Payload zgodny z wymaganiami n8n webhook

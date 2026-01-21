@@ -55,7 +55,7 @@ export default function ProductCard({ produkt }: ProductCardProps) {
     >
       {/* Zdjecie produktu */}
       <Link href={`/produkt/${produkt.id}`} className="block relative">
-        <div className="relative aspect-square bg-gray-50 overflow-hidden">
+        <div className="relative aspect-square bg-white overflow-hidden">
           {produkt.zdjecia?.[0] ? (
             <Image
               src={zdjecieUrl}
