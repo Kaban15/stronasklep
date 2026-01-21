@@ -114,24 +114,34 @@ export default function KoszykPage() {
                   {/* Kontrolki - mobile */}
                   <div className="flex items-center justify-between mt-4">
                     {/* Ilość */}
-                    <div className="flex items-center border border-gray-200 rounded-lg">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.ilosc - 1)}
-                        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors"
-                        aria-label="Zmniejsz ilość"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-12 text-center font-medium text-gray-900">
-                        {item.ilosc}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.ilosc + 1)}
-                        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors"
-                        aria-label="Zwiększ ilość"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border border-gray-200 rounded-lg">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.ilosc - 1)}
+                          className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors"
+                          aria-label="Zmniejsz ilość"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-12 text-center font-medium text-gray-900">
+                          {item.ilosc}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.ilosc + 1)}
+                          disabled={item.maxStock !== undefined && item.ilosc >= item.maxStock}
+                          className={`w-10 h-10 flex items-center justify-center rounded-r-lg transition-colors ${
+                            item.maxStock !== undefined && item.ilosc >= item.maxStock
+                              ? 'text-gray-300 cursor-not-allowed bg-gray-50'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                          }`}
+                          aria-label="Zwiększ ilość"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {item.maxStock !== undefined && item.ilosc >= item.maxStock && (
+                        <span className="text-xs text-amber-600 font-medium">Max</span>
+                      )}
                     </div>
 
                     {/* Suma i usuń */}

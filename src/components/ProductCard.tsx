@@ -30,7 +30,8 @@ export default function ProductCard({ produkt }: ProductCardProps) {
         nazwa: produkt.nazwa,
         cena: produkt.cena,
         zdjecie: zdjecieUrl,
-        cenaJednostkowa
+        cenaJednostkowa,
+        maxStock: produkt.iloscMagazynowa
       })
 
       // PostHog tracking

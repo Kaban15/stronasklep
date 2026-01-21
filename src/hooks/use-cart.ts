@@ -8,6 +8,7 @@ export interface CartItem {
   ilosc: number
   zdjecie?: string
   cenaJednostkowa?: string
+  maxStock?: number // Limit magazynowy
 }
 
 interface CartState {
@@ -39,9 +40,18 @@ export const useCart = create<CartState>()(
           const existingItem = state.items.find((i) => i.id === item.id)
 
           if (existingItem) {
+            // Sprawdź limit magazynowy
+            const maxStock = item.maxStock ?? existingItem.maxStock ?? Infinity
+            if (existingItem.ilosc >= maxStock) {
+              // Osiągnięto limit - nie dodawaj więcej
+              return { ...state, isOpen: true }
+            }
+
             return {
               items: state.items.map((i) =>
-                i.id === item.id ? { ...i, ilosc: i.ilosc + 1 } : i
+                i.id === item.id
+                  ? { ...i, ilosc: Math.min(i.ilosc + 1, maxStock), maxStock }
+                  : i
               ),
               isOpen: true
             }
@@ -66,11 +76,17 @@ export const useCart = create<CartState>()(
           return
         }
 
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, ilosc } : i
-          )
-        }))
+        set((state) => {
+          const item = state.items.find((i) => i.id === id)
+          const maxStock = item?.maxStock ?? Infinity
+          const newIlosc = Math.min(ilosc, maxStock)
+
+          return {
+            items: state.items.map((i) =>
+              i.id === id ? { ...i, ilosc: newIlosc } : i
+            )
+          }
+        })
       },
 
       clearCart: () => {
