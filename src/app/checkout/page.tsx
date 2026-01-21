@@ -15,7 +15,8 @@ import {
   Loader2,
   ShieldCheck,
   Package,
-  Ticket
+  Ticket,
+  ChevronDown
 } from 'lucide-react'
 
 interface CheckoutFormData {
@@ -32,11 +33,13 @@ interface CheckoutFormData {
 }
 
 const KOSZT_DOSTAWY = 15.00
+const OPLATA_POBRANIE = 5.00
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [showPromoCode, setShowPromoCode] = useState(false)
 
   const {
     register,
@@ -55,49 +58,37 @@ export default function CheckoutPage() {
     setMounted(true)
   }, [])
 
+  // Obliczenia cenowe
   const sumaProduktow = getTotalPrice()
-  const sumaCalkowita = sumaProduktow + KOSZT_DOSTAWY
+  const oplataPlatnosc = metodaPlatnosci === 'przy_odbiorze' ? OPLATA_POBRANIE : 0
+  const sumaCalkowita = sumaProduktow + KOSZT_DOSTAWY + oplataPlatnosc
 
   const onSubmit = async (data: CheckoutFormData) => {
-    const adres = `${data.imie} ${data.nazwisko}\n${data.ulica}\n${data.kodPocztowy} ${data.miasto}\nTel: ${data.telefon}`
-
+    // Payload zgodny z wymaganiami n8n webhook
     const payload = {
-      customer: {
-        imie: data.imie,
-        nazwisko: data.nazwisko,
-        email: data.email,
-        telefon: data.telefon,
-        adres: {
-          ulica: data.ulica,
-          kodPocztowy: data.kodPocztowy,
-          miasto: data.miasto
-        }
-      },
-      products: items.map(item => ({
-        id: item.id,
-        nazwa: item.nazwa,
-        cena: item.cena,
-        ilosc: item.ilosc
-      })),
-      total: sumaCalkowita,
-      subtotal: sumaProduktow,
-      shipping: KOSZT_DOSTAWY,
-      metodaPlatnosci: data.metodaPlatnosci,
-      uwagi: data.uwagi || undefined,
-      status: 'new',
-      // Dla kompatybilności z istniejącym API
-      email: data.email,
       imie: data.imie,
       nazwisko: data.nazwisko,
+      email: data.email,
+      telefon: data.telefon.replace(/\s/g, ''), // Usuń spacje
+      adres: {
+        ulica: data.ulica,
+        kodPocztowy: data.kodPocztowy,
+        miasto: data.miasto
+      },
+      metodaPlatnosci: data.metodaPlatnosci,
+      uzyty_kod_rabatowy: data.kodRabatowy?.trim().toUpperCase() || '',
       produkty: items.map(item => ({
         id: item.id,
         nazwa: item.nazwa,
-        cena: item.cena,
-        ilosc: item.ilosc
+        ilosc: item.ilosc,
+        cena: item.cena
       })),
-      adres,
-      // Kod polecający/rabatowy dla n8n workflow
-      uzyty_kod_rabatowy: data.kodRabatowy?.trim().toUpperCase() || undefined
+      total: sumaCalkowita,
+      // Dodatkowe pola pomocnicze
+      subtotal: sumaProduktow,
+      shipping: KOSZT_DOSTAWY,
+      paymentFee: oplataPlatnosc,
+      uwagi: data.uwagi || ''
     }
 
     try {
@@ -115,8 +106,8 @@ export default function CheckoutPage() {
 
       // Zapisz dane do sessionStorage dla strony thank-you
       sessionStorage.setItem('orderData', JSON.stringify({
-        numerZamowienia: result.numerZamowienia,
-        kwota: result.kwota || sumaCalkowita.toFixed(2),
+        numerZamowienia: result.numerZamowienia || result.id,
+        kwota: sumaCalkowita.toFixed(2),
         email: data.email,
         metodaPlatnosci: data.metodaPlatnosci
       }))
@@ -155,7 +146,7 @@ export default function CheckoutPage() {
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               Wróć do sklepu
@@ -180,7 +171,7 @@ export default function CheckoutPage() {
               <span>Wróć do koszyka</span>
             </Link>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-slate-600" />
               <span>Bezpieczna transakcja</span>
             </div>
           </div>
@@ -199,7 +190,7 @@ export default function CheckoutPage() {
               {/* Dane kontaktowe */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                  <span className="w-8 h-8 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-sm font-bold">1</span>
                   Dane kontaktowe
                 </h2>
 
@@ -211,7 +202,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       {...register('imie', { required: 'Imię jest wymagane' })}
-                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.imie ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="Jan"
@@ -228,7 +219,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       {...register('nazwisko', { required: 'Nazwisko jest wymagane' })}
-                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.nazwisko ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="Kowalski"
@@ -251,7 +242,7 @@ export default function CheckoutPage() {
                           message: 'Nieprawidłowy adres email'
                         }
                       })}
-                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="jan@example.com"
@@ -271,7 +262,7 @@ export default function CheckoutPage() {
                         required: 'Telefon jest wymagany',
                         minLength: { value: 9, message: 'Numer za krótki' }
                       })}
-                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.telefon ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="123 456 789"
@@ -286,7 +277,7 @@ export default function CheckoutPage() {
               {/* Adres dostawy */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                  <span className="w-8 h-8 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-sm font-bold">2</span>
                   Adres dostawy
                 </h2>
 
@@ -298,7 +289,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       {...register('ulica', { required: 'Adres jest wymagany' })}
-                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                      className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.ulica ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       placeholder="ul. Przykładowa 15/3"
@@ -322,7 +313,7 @@ export default function CheckoutPage() {
                             message: 'Format: 00-000'
                           }
                         })}
-                        className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                           errors.kodPocztowy ? 'border-red-300 bg-red-50' : 'border-gray-200'
                         }`}
                         placeholder="00-000"
@@ -339,7 +330,7 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         {...register('miasto', { required: 'Miasto jest wymagane' })}
-                        className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                           errors.miasto ? 'border-red-300 bg-red-50' : 'border-gray-200'
                         }`}
                         placeholder="Warszawa"
@@ -355,21 +346,21 @@ export default function CheckoutPage() {
               {/* Metoda płatności */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                  <span className="w-8 h-8 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-sm font-bold">3</span>
                   Metoda płatności
                 </h2>
 
                 <div className="space-y-3">
                   <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
                     metodaPlatnosci === 'przelew'
-                      ? 'border-emerald-500 bg-emerald-50'
+                      ? 'border-slate-900 bg-slate-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}>
                     <input
                       type="radio"
                       {...register('metodaPlatnosci')}
                       value="przelew"
-                      className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                      className="w-5 h-5 text-slate-900 focus:ring-slate-500"
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -384,20 +375,20 @@ export default function CheckoutPage() {
 
                   <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
                     metodaPlatnosci === 'przy_odbiorze'
-                      ? 'border-emerald-500 bg-emerald-50'
+                      ? 'border-slate-900 bg-slate-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}>
                     <input
                       type="radio"
                       {...register('metodaPlatnosci')}
                       value="przy_odbiorze"
-                      className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                      className="w-5 h-5 text-slate-900 focus:ring-slate-500"
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Banknote className="w-5 h-5 text-gray-600" />
                         <span className="font-medium text-gray-900">Płatność przy odbiorze</span>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">+5 zł</span>
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">+5 zł</span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
                         Zapłacisz gotówką lub kartą przy odbiorze przesyłki
@@ -416,7 +407,7 @@ export default function CheckoutPage() {
                 <textarea
                   {...register('uwagi')}
                   rows={3}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-none"
                   placeholder="Dodatkowe informacje dla kuriera..."
                 />
               </div>
@@ -424,7 +415,7 @@ export default function CheckoutPage() {
 
             {/* Prawa kolumna - Podsumowanie */}
             <div className="lg:col-span-2">
-              <div className="bg-gray-100 rounded-2xl p-6 lg:sticky lg:top-24">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 lg:sticky lg:top-24 shadow-sm">
                 <h2 className="text-lg font-bold text-gray-900 mb-6">
                   Podsumowanie zamówienia
                 </h2>
@@ -433,7 +424,7 @@ export default function CheckoutPage() {
                 <div className="space-y-4 mb-6">
                   {items.map(item => (
                     <div key={item.id} className="flex gap-3">
-                      <div className="relative w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative w-16 h-16 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
                         {item.zdjecie ? (
                           <Image
                             src={item.zdjecie}
@@ -446,7 +437,7 @@ export default function CheckoutPage() {
                             <Package className="w-6 h-6" />
                           </div>
                         )}
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-gray-900 text-white text-xs rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-slate-900 text-white text-xs rounded-full flex items-center justify-center">
                           {item.ilosc}
                         </span>
                       </div>
@@ -466,7 +457,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Koszty */}
-                <div className="border-t border-gray-200 pt-4 space-y-3">
+                <div className="border-t border-gray-100 pt-4 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Produkty</span>
                     <span className="font-medium text-gray-900">{sumaProduktow.toFixed(2)} zł</span>
@@ -474,52 +465,67 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-1">
                       <Truck className="w-4 h-4" />
-                      Dostawa
+                      Dostawa kurierem
                     </span>
                     <span className="font-medium text-gray-900">{KOSZT_DOSTAWY.toFixed(2)} zł</span>
                   </div>
                   {metodaPlatnosci === 'przy_odbiorze' && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Płatność przy odbiorze</span>
-                      <span className="font-medium text-gray-900">5.00 zł</span>
+                      <span className="text-gray-600 flex items-center gap-1">
+                        <Banknote className="w-4 h-4" />
+                        Opłata za płatność
+                      </span>
+                      <span className="font-medium text-gray-900">{OPLATA_POBRANIE.toFixed(2)} zł</span>
                     </div>
                   )}
                 </div>
 
                 {/* Suma całkowita */}
-                <div className="border-t border-gray-200 mt-4 pt-4">
+                <div className="border-t border-gray-100 mt-4 pt-4">
                   <div className="flex justify-between items-baseline">
                     <span className="text-gray-900 font-medium">Do zapłaty</span>
                     <span className="text-2xl font-bold text-gray-900">
-                      {(sumaCalkowita + (metodaPlatnosci === 'przy_odbiorze' ? 5 : 0)).toFixed(2)} zł
+                      {sumaCalkowita.toFixed(2)} zł
                     </span>
                   </div>
                 </div>
 
-                {/* Kod polecający */}
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-gray-400" />
-                    Masz kod polecający?
-                  </label>
-                  <input
-                    type="text"
-                    {...register('kodRabatowy')}
-                    placeholder="Wpisz kod (opcjonalnie)"
-                    className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent uppercase placeholder:normal-case"
-                  />
+                {/* Kod rabatowy - Accordion */}
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPromoCode(!showPromoCode)}
+                    className="flex items-center justify-between w-full text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Ticket className="w-4 h-4" />
+                      Dodaj kod rabatowy
+                    </span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showPromoCode ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showPromoCode && (
+                    <div className="mt-3">
+                      <input
+                        type="text"
+                        {...register('kodRabatowy')}
+                        placeholder="Wpisz kod polecający lub rabatowy"
+                        className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent uppercase placeholder:normal-case"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Przycisk */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-14 mt-6 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full h-14 mt-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Przetwarzanie...</span>
+                      <span>Przetwarzanie zamówienia...</span>
                     </>
                   ) : (
                     <span>Złóż zamówienie</span>
@@ -528,17 +534,18 @@ export default function CheckoutPage() {
 
                 {/* Info */}
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  Składając zamówienie akceptujesz regulamin sklepu
+                  Składając zamówienie akceptujesz{' '}
+                  <Link href="/regulamin" className="underline hover:text-gray-700">regulamin sklepu</Link>
                 </p>
 
                 {/* Trust badges */}
-                <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-2 gap-3">
+                <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <ShieldCheck className="w-4 h-4 text-slate-600" />
                     <span>Bezpieczna transakcja</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Truck className="w-4 h-4 text-emerald-500" />
+                    <Truck className="w-4 h-4 text-slate-600" />
                     <span>Wysyłka 24h</span>
                   </div>
                 </div>
