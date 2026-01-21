@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const N8N_WEBHOOK_URL = process.env.N8N_URL + '/webhook/nowe-zamowienie'
+const N8N_WEBHOOK_URL = process.env.N8N_URL + '/webhook/zamowieniev2'
 
 export async function POST(request: Request) {
   try {
