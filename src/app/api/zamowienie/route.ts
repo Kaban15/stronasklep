@@ -1,51 +1,36 @@
-import { NextResponse } from 'next/server'
-
-const N8N_WEBHOOK_URL = process.env.N8N_URL + '/webhook/zamowieniev2'
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const body = await request.json();
 
-    // Walidacja podstawowa
-    if (!body.email || !body.produkty || body.produkty.length === 0) {
-      return NextResponse.json(
-        { error: 'Brak wymaganych danych (email, produkty)' },
-        { status: 400 }
-      )
-    }
+    // NOWY ADRES N8N (V2)
+    const N8N_URL = 'https://n8n.kaban.click/webhook/zamowieniev2';
+    console.log('Wysyłanie zamówienia do:', N8N_URL);
 
-    if (!body.adres) {
-      return NextResponse.json(
-        { error: 'Brak adresu dostawy' },
-        { status: 400 }
-      )
-    }
-
-    // Wyślij do n8n webhook
-    const response = await fetch(N8N_WEBHOOK_URL, {
+    const response = await fetch(N8N_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body)
-    })
-
-    const data = await response.json()
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
-      console.error('Błąd n8n:', data)
+      console.error('Błąd n8n:', response.status, response.statusText);
       return NextResponse.json(
-        { error: data.error || 'Błąd przetwarzania zamówienia' },
+        { error: 'Błąd połączenia z CRM' },
         { status: response.status }
-      )
+      );
     }
 
-    return NextResponse.json(data)
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Błąd API zamówienie:', error)
+    console.error('Błąd API:', error);
     return NextResponse.json(
-      { error: 'Wystąpił błąd serwera' },
+      { error: 'Wewnętrzny błąd serwera' },
       { status: 500 }
-    )
+    );
   }
 }
