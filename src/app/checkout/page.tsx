@@ -38,7 +38,7 @@ const SHIPPING_COST = 15
 const COD_FEE = 5 // opłata za płatność przy odbiorze
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, clearCart } = useCart()
+  const { items, clearCart } = useCart()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [showPromoCode, setShowPromoCode] = useState(false)
@@ -62,14 +62,20 @@ export default function CheckoutPage() {
     setMounted(true)
   }, [])
 
-  // Obliczenia cenowe - SZTYWNA LOGIKA darmowej dostawy
-  const subtotal = getTotalPrice()
-  const shippingCost = subtotal >= 250 ? 0 : 15
+  // 1. Oblicz sumę produktów (upewnij się, że to liczba) - derived state
+  const subtotal = items.reduce((sum, item) => sum + (item.cena * item.ilosc), 0)
+
+  // 2. Sztywna logika darmowej dostawy
+  const isFreeShipping = subtotal >= 250
+  const shippingCost = isFreeShipping ? 0 : 15
+
+  // 3. Logika płatności (pobranie)
   const paymentFee = metodaPlatnosci === 'przy_odbiorze' ? 5 : 0
+
+  // 4. Finalna suma
   const total = subtotal + shippingCost + paymentFee
 
   // Pasek darmowej dostawy
-  const isFreeShipping = shippingCost === 0
   const missingAmount = 250 - subtotal
   const progressPercent = Math.min((subtotal / 250) * 100, 100)
 
@@ -506,16 +512,11 @@ export default function CheckoutPage() {
                     <span className="text-gray-600">Produkty</span>
                     <span className="font-medium text-gray-900">{subtotal.toFixed(2)} zł</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Truck className="w-4 h-4" />
-                      Dostawa kurierem
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-600">Dostawa</span>
+                    <span className={isFreeShipping ? "text-green-600 font-medium" : "text-slate-900"}>
+                      {isFreeShipping ? "0.00 zł (Gratis!)" : "15.00 zł"}
                     </span>
-                    {isFreeShipping ? (
-                      <span className="font-medium text-emerald-600">0.00 zł (Darmowa!)</span>
-                    ) : (
-                      <span className="font-medium text-gray-900">{shippingCost.toFixed(2)} zł</span>
-                    )}
                   </div>
                   {metodaPlatnosci === 'przy_odbiorze' && (
                     <div className="flex justify-between text-sm">
