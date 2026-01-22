@@ -60,6 +60,7 @@ export default function CheckoutPage() {
   // Auto-uzupełnianie formularza danymi zalogowanego użytkownika
   useEffect(() => {
     if (isUserLoaded && user) {
+      // Podstawowe dane z Clerk
       if (user.primaryEmailAddress?.emailAddress) {
         setValue('email', user.primaryEmailAddress.emailAddress)
       }
@@ -68,6 +69,25 @@ export default function CheckoutPage() {
       }
       if (user.lastName) {
         setValue('nazwisko', user.lastName)
+      }
+
+      // Dane adresowe z unsafeMetadata (zapisane w panelu klienta)
+      const metadata = user.unsafeMetadata as {
+        phone?: string
+        address?: { street?: string; zip?: string; city?: string }
+      }
+
+      if (metadata?.phone) {
+        setValue('telefon', metadata.phone)
+      }
+      if (metadata?.address?.street) {
+        setValue('ulica', metadata.address.street)
+      }
+      if (metadata?.address?.zip) {
+        setValue('kodPocztowy', metadata.address.zip)
+      }
+      if (metadata?.address?.city) {
+        setValue('miasto', metadata.address.city)
       }
     }
   }, [isUserLoaded, user, setValue])
