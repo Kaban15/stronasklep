@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { ClerkProvider } from '@clerk/nextjs'
+import { plPL } from '@clerk/localizations'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -36,20 +38,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pl">
-      <body className={inter.className}>
-        <PostHogProvider>
-          <PostHogPageView />
-          <Header />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-          <CartSheet />
-          <CookieConsent />
-        </PostHogProvider>
-        <GoogleAnalytics gaId="G-Q3GVLLDCR3" />
-      </body>
-    </html>
+    <ClerkProvider localization={plPL}>
+      <html lang="pl">
+        <body className={inter.className}>
+          <PostHogProvider>
+            <PostHogPageView />
+            <Header />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Footer />
+            <CartSheet />
+            <CookieConsent />
+          </PostHogProvider>
+          <GoogleAnalytics gaId="G-Q3GVLLDCR3" />
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useCart } from '@/hooks/use-cart'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -40,6 +41,7 @@ const COD_FEE = 5 // opłata za płatność przy odbiorze
 export default function CheckoutPage() {
   const { items, clearCart } = useCart()
   const router = useRouter()
+  const { user, isLoaded: isUserLoaded } = useUser()
   const [mounted, setMounted] = useState(false)
   const [showPromoCode, setShowPromoCode] = useState(false)
 
@@ -47,12 +49,28 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<CheckoutFormData>({
     defaultValues: {
       metodaPlatnosci: 'przelew'
     }
   })
+
+  // Auto-uzupełnianie formularza danymi zalogowanego użytkownika
+  useEffect(() => {
+    if (isUserLoaded && user) {
+      if (user.primaryEmailAddress?.emailAddress) {
+        setValue('email', user.primaryEmailAddress.emailAddress)
+      }
+      if (user.firstName) {
+        setValue('imie', user.firstName)
+      }
+      if (user.lastName) {
+        setValue('nazwisko', user.lastName)
+      }
+    }
+  }, [isUserLoaded, user, setValue])
 
   const metodaPlatnosciWatched = watch('metodaPlatnosci')
   // Explicit fallback to ensure correct calculation

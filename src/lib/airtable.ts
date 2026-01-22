@@ -104,3 +104,66 @@ export async function pobierzProduktyWedlugKategorii(kategoria: string): Promise
   const data = await response.json()
   return (data.records as ProduktRaw[]).map(mapProdukt)
 }
+
+// Interfejs zamówienia
+export interface Zamowienie {
+  id: string
+  numerZamowienia: number
+  email: string
+  produkty: string
+  ilosciProduktow: string
+  kwotaCalkowita: number
+  status: 'nowe' | 'oplacone' | 'wysłane' | 'dostarczone' | 'anulowane'
+  metodaPlatnosci: 'przelew' | 'przy_odbiorze'
+  adresDostawy: string
+  dataZamowienia: string
+}
+
+interface ZamowienieRaw {
+  id: string
+  fields: {
+    NumerZamowienia?: number
+    EmailGosc?: string
+    Produkty?: { id: string }[]
+    IlosciProduktow?: string
+    KwotaCalkowita?: number
+    Status?: string
+    MetodaPlatnosci?: string
+    AdresDostawy?: string
+    DataZamowienia?: string
+  }
+}
+
+function mapZamowienie(record: ZamowienieRaw): Zamowienie {
+  return {
+    id: record.id,
+    numerZamowienia: record.fields.NumerZamowienia || 0,
+    email: record.fields.EmailGosc || '',
+    produkty: record.fields.Produkty?.map(p => p.id).join(', ') || '',
+    ilosciProduktow: record.fields.IlosciProduktow || '[]',
+    kwotaCalkowita: record.fields.KwotaCalkowita || 0,
+    status: (record.fields.Status as Zamowienie['status']) || 'nowe',
+    metodaPlatnosci: (record.fields.MetodaPlatnosci as Zamowienie['metodaPlatnosci']) || 'przelew',
+    adresDostawy: record.fields.AdresDostawy || '',
+    dataZamowienia: record.fields.DataZamowienia || ''
+  }
+}
+
+export async function pobierzZamowieniaUzytkownika(email: string): Promise<Zamowienie[]> {
+  // Kodowanie email dla URL i formuły Airtable
+  const encodedFormula = encodeURIComponent(`{EmailGosc}='${email}'`)
+  const url = `https://api.airtable.com/v0/${BASE_ID}/Zamowienia?filterByFormula=${encodedFormula}&sort%5B0%5D%5Bfield%5D=DataZamowienia&sort%5B0%5D%5Bdirection%5D=desc`
+
+  const response = await fetch(url, {
+    headers,
+    cache: 'no-store' // Zawsze pobieraj świeże dane dla zamówień
+  })
+
+  if (!response.ok) {
+    console.error('Błąd pobierania zamówień:', await response.text())
+    return []
+  }
+
+  const data = await response.json()
+  return (data.records as ZamowienieRaw[]).map(mapZamowienie)
+}

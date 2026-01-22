@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/hooks/use-cart'
-import { ShoppingCart, Menu, X } from 'lucide-react'
+import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
+import { ShoppingCart, Menu, X, User } from 'lucide-react'
 
 export default function Header() {
   const { getTotalItems, openCart } = useCart()
@@ -61,6 +62,34 @@ export default function Header() {
 
           {/* Akcje */}
           <div className="flex items-center gap-2">
+            {/* Auth - zalogowany */}
+            <SignedIn>
+              <Link
+                href="/konto"
+                className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors mr-2"
+              >
+                Moje konto
+              </Link>
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-10 h-10'
+                  }
+                }}
+              />
+            </SignedIn>
+
+            {/* Auth - niezalogowany */}
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                  <User className="w-5 h-5" />
+                  <span className="hidden sm:inline">Zaloguj</span>
+                </button>
+              </SignInButton>
+            </SignedOut>
+
             {/* Przycisk koszyka */}
             <button
               onClick={openCart}
@@ -115,6 +144,15 @@ export default function Header() {
               >
                 Zabawki
               </Link>
+              <SignedIn>
+                <Link
+                  href="/konto"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                >
+                  Moje konto
+                </Link>
+              </SignedIn>
             </div>
           </nav>
         )}
