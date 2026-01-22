@@ -51,7 +51,7 @@ export async function pobierzProdukty(): Promise<Produkt[]> {
   const response = await fetch(url, {
     headers,
     next: {
-      revalidate: 3600, // Cache na 1 godzinę (rewalidacja przez tag)
+      revalidate: 600, // ISR: odświeżanie co 10 minut
       tags: ['products']
     }
   })
@@ -71,7 +71,7 @@ export async function pobierzProdukt(id: string): Promise<Produkt | null> {
   const response = await fetch(url, {
     headers,
     next: {
-      revalidate: 3600, // Cache na 1 godzinę (rewalidacja przez tag)
+      revalidate: 600, // ISR: odświeżanie co 10 minut
       tags: ['products']
     }
   })
@@ -91,7 +91,7 @@ export async function pobierzProduktyWedlugKategorii(kategoria: string): Promise
   const response = await fetch(url, {
     headers,
     next: {
-      revalidate: 3600, // Cache na 1 godzinę (rewalidacja przez tag)
+      revalidate: 600, // ISR: odświeżanie co 10 minut
       tags: ['products']
     }
   })

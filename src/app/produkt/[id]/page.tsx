@@ -8,6 +8,9 @@ import AddToCartButton from './AddToCartButton'
 import ProductTabs from './ProductTabs'
 import { Truck, ShieldCheck, Package, ChevronRight } from 'lucide-react'
 
+// ISR: odświeżanie co 10 minut
+export const revalidate = 600
+
 interface Props {
   params: { id: string }
 }

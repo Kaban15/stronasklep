@@ -1,6 +1,9 @@
 import { pobierzProdukty, pobierzProduktyWedlugKategorii } from '@/lib/airtable'
 import ProductGrid from '@/components/ProductGrid'
 
+// ISR: odświeżanie co 10 minut
+export const revalidate = 600
+
 interface Props {
   searchParams: { kategoria?: string }
 }
