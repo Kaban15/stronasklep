@@ -79,8 +79,6 @@ export default function CheckoutPage() {
   const missingAmount = 250 - subtotal
   const progressPercent = Math.min((subtotal / 250) * 100, 100)
 
-  // Debug - można usunąć w produkcji
-  console.log('[Checkout] Subtotal:', subtotal, '| Shipping:', shippingCost, '| PaymentFee:', paymentFee, '| Total:', total)
 
   const onSubmit = async (data: CheckoutFormData) => {
     // Payload zgodny z wymaganiami n8n webhook
@@ -513,7 +511,7 @@ export default function CheckoutPage() {
                     <span className="font-medium text-gray-900">{subtotal.toFixed(2)} zł</span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-slate-600">Dostawa <span className="text-xs text-red-500">(DEBUG: {subtotal.toFixed(2)} zł, free={String(isFreeShipping)})</span></span>
+                    <span className="text-slate-600">Dostawa</span>
                     <span className={isFreeShipping ? "text-green-600 font-medium" : "text-slate-900"}>
                       {isFreeShipping ? "0.00 zł (Gratis!)" : "15.00 zł"}
                     </span>
