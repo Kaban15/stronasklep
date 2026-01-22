@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/checkout', '/thank-you']
+        disallow: ['/api/', '/checkout', '/dziekujemy', '/konto']
       }
     ],
     sitemap: 'https://stronasklep.vercel.app/sitemap.xml'

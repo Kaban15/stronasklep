@@ -13,16 +13,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0
     },
     {
-      url: `${BASE_URL}/koszyk`,
+      url: `${BASE_URL}/chemia-gospodarcza`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.5
+      changeFrequency: 'daily',
+      priority: 0.9
     },
     {
-      url: `${BASE_URL}/checkout`,
+      url: `${BASE_URL}/zabawki`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.5
+      changeFrequency: 'daily',
+      priority: 0.9
     },
     {
       url: `${BASE_URL}/regulamin`,
@@ -32,24 +32,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${BASE_URL}/polityka-prywatnosci`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3
-    },
-    {
-      url: `${BASE_URL}/kontakt`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4
-    },
-    {
-      url: `${BASE_URL}/dostawa`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4
-    },
-    {
-      url: `${BASE_URL}/zwroty`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.3
