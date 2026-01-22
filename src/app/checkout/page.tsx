@@ -32,7 +32,8 @@ interface CheckoutFormData {
   kodRabatowy: string
 }
 
-const KOSZT_DOSTAWY = 15.00
+const FREE_SHIPPING_THRESHOLD = 250
+const KOSZT_DOSTAWY_BAZOWY = 15.00
 const OPLATA_POBRANIE = 5.00
 
 export default function CheckoutPage() {
@@ -62,8 +63,14 @@ export default function CheckoutPage() {
 
   // Obliczenia cenowe - dynamiczne na podstawie wybranej metody płatności
   const sumaProduktow = getTotalPrice()
+  const isFreeShipping = sumaProduktow >= FREE_SHIPPING_THRESHOLD
+  const kosztDostawy = isFreeShipping ? 0 : KOSZT_DOSTAWY_BAZOWY
   const oplataPlatnosc = metodaPlatnosci === 'przy_odbiorze' ? OPLATA_POBRANIE : 0
-  const sumaCalkowita = sumaProduktow + KOSZT_DOSTAWY + oplataPlatnosc
+  const sumaCalkowita = sumaProduktow + kosztDostawy + oplataPlatnosc
+
+  // Pasek darmowej dostawy
+  const missingAmount = FREE_SHIPPING_THRESHOLD - sumaProduktow
+  const progressPercent = Math.min((sumaProduktow / FREE_SHIPPING_THRESHOLD) * 100, 100)
 
   // Debug log for verification (can be removed in production)
   // console.log('Payment method:', metodaPlatnosci, 'Fee:', oplataPlatnosc, 'Total:', sumaCalkowita)
@@ -91,7 +98,7 @@ export default function CheckoutPage() {
       total: sumaCalkowita,
       // Dodatkowe pola pomocnicze
       subtotal: sumaProduktow,
-      shipping: KOSZT_DOSTAWY,
+      shipping: kosztDostawy,
       paymentFee: oplataPlatnosc,
       uwagi: data.uwagi || ''
     }
@@ -461,8 +468,31 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
+                {/* Pasek darmowej dostawy */}
+                <div className="border-t border-gray-100 pt-4 mb-4">
+                  {isFreeShipping ? (
+                    <div className="flex items-center gap-2 text-emerald-600 font-medium text-sm">
+                      <Truck className="w-5 h-5" />
+                      <span>Darmowa wysyłka odblokowana! 🎉</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-2 text-slate-700 text-sm mb-2">
+                        <Truck className="w-4 h-4" />
+                        <span>Brakuje Ci <strong>{missingAmount.toFixed(2)} zł</strong> do darmowej wysyłki! 🚚</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-slate-700 rounded-full transition-all duration-300"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Koszty */}
-                <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Produkty</span>
                     <span className="font-medium text-gray-900">{sumaProduktow.toFixed(2)} zł</span>
@@ -472,7 +502,11 @@ export default function CheckoutPage() {
                       <Truck className="w-4 h-4" />
                       Dostawa kurierem
                     </span>
-                    <span className="font-medium text-gray-900">{KOSZT_DOSTAWY.toFixed(2)} zł</span>
+                    {isFreeShipping ? (
+                      <span className="font-medium text-emerald-600">GRATIS</span>
+                    ) : (
+                      <span className="font-medium text-gray-900">{kosztDostawy.toFixed(2)} zł</span>
+                    )}
                   </div>
                   {metodaPlatnosci === 'przy_odbiorze' && (
                     <div className="flex justify-between text-sm">

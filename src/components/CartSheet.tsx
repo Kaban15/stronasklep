@@ -4,7 +4,9 @@ import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/hooks/use-cart'
-import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
+import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck } from 'lucide-react'
+
+const FREE_SHIPPING_THRESHOLD = 250
 
 export default function CartSheet() {
   const {
@@ -19,6 +21,11 @@ export default function CartSheet() {
 
   const totalItems = getTotalItems()
   const totalPrice = getTotalPrice()
+
+  // Logika darmowej dostawy
+  const isFreeShipping = totalPrice >= FREE_SHIPPING_THRESHOLD
+  const missingAmount = FREE_SHIPPING_THRESHOLD - totalPrice
+  const progressPercent = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100)
 
   // Blokuj scroll body gdy koszyk jest otwarty
   useEffect(() => {
@@ -179,6 +186,29 @@ export default function CartSheet() {
         {/* Footer - suma i przycisk */}
         {items.length > 0 && (
           <div className="border-t border-gray-200 px-6 py-6 bg-white">
+            {/* Pasek darmowej dostawy */}
+            <div className="mb-4">
+              {isFreeShipping ? (
+                <div className="flex items-center gap-2 text-emerald-600 font-medium text-sm">
+                  <Truck className="w-5 h-5" />
+                  <span>Darmowa wysyłka odblokowana! 🎉</span>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 text-slate-700 text-sm mb-2">
+                    <Truck className="w-4 h-4" />
+                    <span>Brakuje Ci <strong>{missingAmount.toFixed(2)} zł</strong> do darmowej wysyłki! 🚚</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-slate-700 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Suma */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-gray-600">Suma częściowa</span>
@@ -188,7 +218,7 @@ export default function CartSheet() {
             </div>
 
             <p className="text-xs text-gray-500 mb-4">
-              Koszty dostawy obliczone przy kasie
+              {isFreeShipping ? 'Darmowa dostawa!' : 'Dostawa od 15 zł (darmowa od 250 zł)'}
             </p>
 
             {/* Przycisk */}
