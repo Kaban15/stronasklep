@@ -48,9 +48,7 @@ export default function RootLayout({
           <CartSheet />
           <CookieConsent />
         </PostHogProvider>
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
+        <GoogleAnalytics gaId="G-Q3GVLLDCR3" />
       </body>
     </html>
   )
