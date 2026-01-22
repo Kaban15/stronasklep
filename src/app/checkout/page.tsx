@@ -32,9 +32,10 @@ interface CheckoutFormData {
   kodRabatowy: string
 }
 
+// Stałe cenowe - SZTYWNA LOGIKA
 const FREE_SHIPPING_THRESHOLD = 250
-const KOSZT_DOSTAWY_BAZOWY = 15.00
-const OPLATA_POBRANIE = 5.00
+const SHIPPING_COST = 15
+const COD_FEE = 5 // opłata za płatność przy odbiorze
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCart()
@@ -61,19 +62,19 @@ export default function CheckoutPage() {
     setMounted(true)
   }, [])
 
-  // Obliczenia cenowe - dynamiczne na podstawie wybranej metody płatności
-  const sumaProduktow = getTotalPrice()
-  const isFreeShipping = sumaProduktow >= FREE_SHIPPING_THRESHOLD
-  const kosztDostawy = isFreeShipping ? 0 : KOSZT_DOSTAWY_BAZOWY
-  const oplataPlatnosc = metodaPlatnosci === 'przy_odbiorze' ? OPLATA_POBRANIE : 0
-  const sumaCalkowita = sumaProduktow + kosztDostawy + oplataPlatnosc
+  // Obliczenia cenowe - SZTYWNA LOGIKA darmowej dostawy
+  const subtotal = getTotalPrice()
+  const shippingCost = subtotal >= 250 ? 0 : 15
+  const paymentFee = metodaPlatnosci === 'przy_odbiorze' ? 5 : 0
+  const total = subtotal + shippingCost + paymentFee
 
   // Pasek darmowej dostawy
-  const missingAmount = FREE_SHIPPING_THRESHOLD - sumaProduktow
-  const progressPercent = Math.min((sumaProduktow / FREE_SHIPPING_THRESHOLD) * 100, 100)
+  const isFreeShipping = shippingCost === 0
+  const missingAmount = 250 - subtotal
+  const progressPercent = Math.min((subtotal / 250) * 100, 100)
 
-  // Debug log for verification (can be removed in production)
-  // console.log('Payment method:', metodaPlatnosci, 'Fee:', oplataPlatnosc, 'Total:', sumaCalkowita)
+  // Debug - można usunąć w produkcji
+  console.log('[Checkout] Subtotal:', subtotal, '| Shipping:', shippingCost, '| PaymentFee:', paymentFee, '| Total:', total)
 
   const onSubmit = async (data: CheckoutFormData) => {
     // Payload zgodny z wymaganiami n8n webhook
@@ -95,11 +96,11 @@ export default function CheckoutPage() {
         ilosc: item.ilosc,
         cena: item.cena
       })),
-      total: sumaCalkowita,
+      total: total,
       // Dodatkowe pola pomocnicze
-      subtotal: sumaProduktow,
-      shipping: kosztDostawy,
-      paymentFee: oplataPlatnosc,
+      subtotal: subtotal,
+      shipping: shippingCost,
+      paymentFee: paymentFee,
       uwagi: data.uwagi || ''
     }
 
@@ -119,7 +120,7 @@ export default function CheckoutPage() {
       // Zapisz dane do sessionStorage dla strony thank-you
       sessionStorage.setItem('orderData', JSON.stringify({
         numerZamowienia: result.numerZamowienia || result.id,
-        kwota: sumaCalkowita.toFixed(2),
+        kwota: total.toFixed(2),
         email: data.email,
         metodaPlatnosci: data.metodaPlatnosci
       }))
@@ -471,22 +472,30 @@ export default function CheckoutPage() {
                 {/* Pasek darmowej dostawy */}
                 <div className="border-t border-gray-100 pt-4 mb-4">
                   {isFreeShipping ? (
-                    <div className="flex items-center gap-2 text-emerald-600 font-medium text-sm">
-                      <Truck className="w-5 h-5" />
-                      <span>Darmowa wysyłka odblokowana! 🎉</span>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm">
+                        <Truck className="w-5 h-5" />
+                        <span>Darmowa dostawa aktywna! 🎉</span>
+                      </div>
+                      <p className="text-emerald-600 text-xs mt-1 ml-7">
+                        Oszczędzasz 15 zł na dostawie
+                      </p>
                     </div>
                   ) : (
-                    <div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                       <div className="flex items-center gap-2 text-slate-700 text-sm mb-2">
                         <Truck className="w-4 h-4" />
-                        <span>Brakuje Ci <strong>{missingAmount.toFixed(2)} zł</strong> do darmowej wysyłki! 🚚</span>
+                        <span>Brakuje Ci jeszcze <strong>{missingAmount.toFixed(2)} zł</strong> do darmowej dostawy! 🚚</span>
                       </div>
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-slate-700 rounded-full transition-all duration-300"
+                          className="h-full bg-blue-600 rounded-full transition-all duration-300"
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
+                      <p className="text-slate-500 text-xs mt-1.5">
+                        {progressPercent.toFixed(0)}% do progu {FREE_SHIPPING_THRESHOLD} zł
+                      </p>
                     </div>
                   )}
                 </div>
@@ -495,7 +504,7 @@ export default function CheckoutPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Produkty</span>
-                    <span className="font-medium text-gray-900">{sumaProduktow.toFixed(2)} zł</span>
+                    <span className="font-medium text-gray-900">{subtotal.toFixed(2)} zł</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-1">
@@ -503,9 +512,9 @@ export default function CheckoutPage() {
                       Dostawa kurierem
                     </span>
                     {isFreeShipping ? (
-                      <span className="font-medium text-emerald-600">GRATIS</span>
+                      <span className="font-medium text-emerald-600">0.00 zł (Darmowa!)</span>
                     ) : (
-                      <span className="font-medium text-gray-900">{kosztDostawy.toFixed(2)} zł</span>
+                      <span className="font-medium text-gray-900">{shippingCost.toFixed(2)} zł</span>
                     )}
                   </div>
                   {metodaPlatnosci === 'przy_odbiorze' && (
@@ -514,7 +523,7 @@ export default function CheckoutPage() {
                         <Banknote className="w-4 h-4" />
                         Opłata za płatność
                       </span>
-                      <span className="font-medium text-gray-900">{OPLATA_POBRANIE.toFixed(2)} zł</span>
+                      <span className="font-medium text-gray-900">{paymentFee.toFixed(2)} zł</span>
                     </div>
                   )}
                 </div>
@@ -524,7 +533,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between items-baseline">
                     <span className="text-gray-900 font-medium">Do zapłaty</span>
                     <span className="text-2xl font-bold text-gray-900">
-                      {sumaCalkowita.toFixed(2)} zł
+                      {total.toFixed(2)} zł
                     </span>
                   </div>
                 </div>
