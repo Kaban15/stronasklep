@@ -1,5 +1,6 @@
 import { pobierzProdukty, pobierzProduktyWedlugKategorii } from '@/lib/airtable'
 import ProductGrid from '@/components/ProductGrid'
+import HeroGrid from '@/components/HeroGrid'
 
 // ISR: odświeżanie co 10 minut
 export const revalidate = 600
@@ -17,83 +18,43 @@ export default async function Home({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section - czysty, profesjonalny styl */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 py-12 md:py-16">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="bg-slate-800 text-white text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
-                Import DE
-              </span>
-              <span className="text-gray-400 text-sm">Oryginalne produkty z Niemiec</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              Chemia gospodarcza<br />
-              <span className="text-gray-500">w najlepszych cenach</span>
-            </h1>
-            <p className="text-gray-600 text-lg mb-8 max-w-xl">
-              Sprawdzone marki prosto z niemieckich sklepów. Persil, Ariel, Fairy i wiele innych.
-            </p>
+      {/* Hero Grid - Bento Style */}
+      <HeroGrid />
 
-            {/* Kategorie - przyciski */}
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="/"
-                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all ${
-                  !kategoria
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Wszystkie produkty
-              </a>
-              <a
-                href="/?kategoria=chemia"
-                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all ${
-                  kategoria === 'chemia'
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Chemia gospodarcza
-              </a>
-              <a
-                href="/?kategoria=zabawki"
-                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all ${
-                  kategoria === 'zabawki'
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Zabawki
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust badges */}
+      {/* Kategorie - filtry */}
       <section className="bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>Oryginalne produkty</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 4-8-4m16 0v10l-8 4m0-10L4 7m8 4v10" />
-              </svg>
-              <span>Szybka wysyłka</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Bezpieczne płatności</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="/"
+              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                !kategoria
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Wszystkie
+            </a>
+            <a
+              href="/?kategoria=chemia"
+              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                kategoria === 'chemia'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Chemia gospodarcza
+            </a>
+            <a
+              href="/?kategoria=zabawki"
+              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                kategoria === 'zabawki'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Zabawki
+            </a>
           </div>
         </div>
       </section>

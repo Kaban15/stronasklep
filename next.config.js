@@ -10,6 +10,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'dl.airtable.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
 }
