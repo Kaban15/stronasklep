@@ -178,3 +178,53 @@ export async function pobierzZamowieniaUzytkownika(email: string): Promise<Zamow
   const data = await response.json()
   return (data.records as ZamowienieRaw[]).map(mapZamowienie)
 }
+
+// Interfejs kodu rabatowego
+export interface DiscountCode {
+  code: string
+  value: number // wartość procentowa, np. 0.1 = 10%
+}
+
+interface DiscountCodeRaw {
+  id: string
+  fields: {
+    Kod?: string
+    Wartosc?: number
+    Aktywny?: boolean
+  }
+}
+
+export async function getDiscountCode(code: string): Promise<DiscountCode | null> {
+  // Sanityzacja kodu - usunięcie znaków specjalnych dla bezpieczeństwa formuły
+  const sanitizedCode = code.trim().toUpperCase().replace(/['"\\]/g, '')
+
+  if (!sanitizedCode) {
+    return null
+  }
+
+  const formula = encodeURIComponent(`AND({Kod}='${sanitizedCode}',{Aktywny}=1)`)
+  const url = `https://api.airtable.com/v0/${BASE_ID}/KodyRabatowe?filterByFormula=${formula}&maxRecords=1`
+
+  const response = await fetch(url, {
+    headers,
+    cache: 'no-store' // Zawsze sprawdzaj aktualność kodu
+  })
+
+  if (!response.ok) {
+    console.error('Błąd pobierania kodu rabatowego:', await response.text())
+    return null
+  }
+
+  const data = await response.json()
+  const records = data.records as DiscountCodeRaw[]
+
+  if (records.length === 0) {
+    return null
+  }
+
+  const record = records[0]
+  return {
+    code: record.fields.Kod || sanitizedCode,
+    value: record.fields.Wartosc || 0
+  }
+}

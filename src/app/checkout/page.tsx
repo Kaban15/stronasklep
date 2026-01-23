@@ -17,8 +17,11 @@ import {
   ShieldCheck,
   Package,
   Ticket,
-  ChevronDown
+  ChevronDown,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react'
+import { validateDiscountAction } from '@/app/actions/checkout'
 
 interface CheckoutFormData {
   imie: string
@@ -45,6 +48,12 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false)
   const [showPromoCode, setShowPromoCode] = useState(false)
   const [orderLocked, setOrderLocked] = useState(false) // Blokada wielokrotnego wysyłania
+
+  // Stan kodu rabatowego
+  const [discount, setDiscount] = useState<{ code: string; value: number } | null>(null)
+  const [discountError, setDiscountError] = useState<string | null>(null)
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false)
+  const [promoCodeInput, setPromoCodeInput] = useState('')
 
   const {
     register,
@@ -111,12 +120,50 @@ export default function CheckoutPage() {
   // 3. Logika płatności (pobranie)
   const paymentFee = metodaPlatnosci === 'przy_odbiorze' ? 5 : 0
 
-  // 4. Finalna suma
-  const total = subtotal + shippingCost + paymentFee
+  // 4. Oblicz zniżkę (TYLKO od subtotal, bez kosztów dostawy)
+  const discountAmount = subtotal * (discount ? discount.value : 0)
+
+  // 5. Finalna suma (subtotal - rabat + dostawa + opłata za pobranie)
+  const total = subtotal - discountAmount + shippingCost + paymentFee
 
   // Pasek darmowej dostawy
   const missingAmount = 250 - subtotal
   const progressPercent = Math.min((subtotal / 250) * 100, 100)
+
+  // Funkcja walidacji kodu rabatowego
+  const handleApplyDiscount = async () => {
+    const code = promoCodeInput.trim()
+    if (!code) {
+      setDiscountError('Wprowadź kod rabatowy')
+      return
+    }
+
+    setIsValidatingDiscount(true)
+    setDiscountError(null)
+
+    try {
+      const result = await validateDiscountAction(code)
+
+      if (result.success && result.discount !== undefined && result.code) {
+        setDiscount({ code: result.code, value: result.discount })
+        setDiscountError(null)
+      } else {
+        setDiscount(null)
+        setDiscountError(result.message || 'Nieprawidłowy kod')
+      }
+    } catch {
+      setDiscountError('Wystąpił błąd podczas weryfikacji kodu')
+    } finally {
+      setIsValidatingDiscount(false)
+    }
+  }
+
+  // Usuwanie kodu rabatowego
+  const handleRemoveDiscount = () => {
+    setDiscount(null)
+    setDiscountError(null)
+    setPromoCodeInput('')
+  }
 
 
   const onSubmit = async (data: CheckoutFormData) => {
@@ -136,16 +183,18 @@ export default function CheckoutPage() {
         miasto: data.miasto
       },
       metodaPlatnosci: data.metodaPlatnosci,
-      uzyty_kod_rabatowy: data.kodRabatowy?.trim().toUpperCase() || '',
+      uzyty_kod_rabatowy: discount?.code || '',
       produkty: items.map(item => ({
         id: item.id,
         nazwa: item.nazwa,
         ilosc: item.ilosc,
         cena: item.cena
       })),
-      total: total,
+      total: total, // Już zawiera obniżoną kwotę
       // Dodatkowe pola pomocnicze
       subtotal: subtotal,
+      discountAmount: discountAmount,
+      discountPercent: discount ? discount.value : 0,
       shipping: shippingCost,
       paymentFee: paymentFee,
       uwagi: data.uwagi || ''
@@ -573,6 +622,15 @@ export default function CheckoutPage() {
                       <span className="font-medium text-gray-900">{paymentFee.toFixed(2)} zł</span>
                     </div>
                   )}
+                  {discount && discountAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-emerald-600 flex items-center gap-1">
+                        <Ticket className="w-4 h-4" />
+                        Rabat ({discount.code})
+                      </span>
+                      <span className="font-medium text-emerald-600">-{discountAmount.toFixed(2)} zł</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Suma całkowita */}
@@ -587,27 +645,79 @@ export default function CheckoutPage() {
 
                 {/* Kod rabatowy - Accordion */}
                 <div className="mt-4 border-t border-gray-100 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowPromoCode(!showPromoCode)}
-                    className="flex items-center justify-between w-full text-sm text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Ticket className="w-4 h-4" />
-                      Dodaj kod rabatowy
-                    </span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showPromoCode ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {showPromoCode && (
-                    <div className="mt-3">
-                      <input
-                        type="text"
-                        {...register('kodRabatowy')}
-                        placeholder="Wpisz kod polecający lub rabatowy"
-                        className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent uppercase placeholder:normal-case"
-                      />
+                  {discount ? (
+                    // Aktywny kod rabatowy
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          <span className="text-sm font-medium text-emerald-700">
+                            Kod {discount.code} aktywny (-{Math.round(discount.value * 100)}%)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveDiscount}
+                          className="text-emerald-600 hover:text-emerald-800 text-sm underline"
+                        >
+                          Usuń
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowPromoCode(!showPromoCode)}
+                        className="flex items-center justify-between w-full text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Ticket className="w-4 h-4" />
+                          Dodaj kod rabatowy
+                        </span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showPromoCode ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showPromoCode && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={promoCodeInput}
+                              onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  handleApplyDiscount()
+                                }
+                              }}
+                              placeholder="Wpisz kod rabatowy"
+                              className="flex-1 h-11 border border-gray-200 rounded-xl px-4 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent uppercase placeholder:normal-case"
+                              disabled={isValidatingDiscount}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleApplyDiscount}
+                              disabled={isValidatingDiscount || !promoCodeInput.trim()}
+                              className="h-11 px-4 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            >
+                              {isValidatingDiscount ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Zastosuj'
+                              )}
+                            </button>
+                          </div>
+
+                          {discountError && (
+                            <div className="flex items-center gap-2 text-sm text-red-600">
+                              <XCircle className="w-4 h-4" />
+                              <span>{discountError}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
