@@ -15,22 +15,40 @@ import { Toaster } from 'sonner'
 const inter = Inter({ subsets: ['latin', 'latin-ext'] })
 
 export const metadata: Metadata = {
-  title: 'SklepMVP - Oryginalna Chemia z Niemiec | Import DE',
-  description: 'Najlepsze proszki, płyny i środki czystości prosto z Niemiec. Persil, Ariel, Lenor. Szybka wysyłka w 24h.',
-  keywords: ['chemia z Niemiec', 'Persil', 'Ariel', 'Lenor', 'proszki do prania', 'środki czystości', 'import z Niemiec'],
-  authors: [{ name: 'SklepMVP' }],
+  title: {
+    default: 'Chemia z Niemiec - Tanie Proszki i Żele | Sklep Online',
+    template: '%s | Chemia z Niemiec'
+  },
+  description: 'Oryginalna chemia gospodarcza z Niemiec. Najniższe ceny za pranie, wysyłka 24h. Sprawdź Persil, Ariel i inne marki.',
+  keywords: ['chemia z Niemiec', 'Persil', 'Ariel', 'Lenor', 'proszki do prania', 'żele do prania', 'środki czystości', 'import z Niemiec', 'tanie pranie'],
+  authors: [{ name: 'Chemia z Niemiec' }],
   openGraph: {
-    title: 'SklepMVP - Oryginalna Chemia z Niemiec | Import DE',
-    description: 'Najlepsze proszki, płyny i środki czystości prosto z Niemiec. Persil, Ariel, Lenor. Szybka wysyłka w 24h.',
+    title: 'Chemia z Niemiec - Tanie Proszki i Żele | Sklep Online',
+    description: 'Oryginalna chemia gospodarcza z Niemiec. Najniższe ceny za pranie, wysyłka 24h. Sprawdź Persil, Ariel i inne marki.',
     url: 'https://stronasklep.vercel.app',
-    siteName: 'SklepMVP',
+    siteName: 'Chemia z Niemiec',
     locale: 'pl_PL',
-    type: 'website'
+    type: 'website',
+    images: [
+      {
+        url: 'https://stronasklep.vercel.app/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Chemia z Niemiec - Sklep Online'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Chemia z Niemiec - Tanie Proszki i Żele',
+    description: 'Oryginalna chemia gospodarcza z Niemiec. Najniższe ceny za pranie, wysyłka 24h.',
+    images: ['https://stronasklep.vercel.app/og-image.png']
   },
   robots: {
     index: true,
     follow: true
-  }
+  },
+  metadataBase: new URL('https://stronasklep.vercel.app')
 }
 
 export default function RootLayout({

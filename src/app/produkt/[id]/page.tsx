@@ -32,22 +32,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!produkt) {
     return {
-      title: 'Produkt nie znaleziony - Chemia z Niemiec',
+      title: 'Produkt nie znaleziony',
       description: 'Produkt nie został znaleziony w naszym sklepie.'
     }
   }
 
   const zdjecieUrl = produkt.zdjecia?.[0]?.url || '/placeholder.png'
-  const opisSkrocony = produkt.opis
-    ? produkt.opis.slice(0, 150) + (produkt.opis.length > 150 ? '...' : '')
-    : `${produkt.nazwa} - oryginalny produkt z Niemiec w najlepszej cenie. Szybka wysyłka 24h.`
+
+  // Buduj dynamiczny opis z ceną i wydajnością
+  const wydajnoscInfo = produkt.efficiency && produkt.unit
+    ? ` Wydajność: ${produkt.efficiency} ${produkt.unit}.`
+    : ''
+
+  const seoDescription = `Kup ${produkt.nazwa} w świetnej cenie ${produkt.cena.toFixed(2)} zł.${wydajnoscInfo} Wysyłka 24h.`
 
   return {
-    title: `${produkt.nazwa} - Chemia z Niemiec | Sklep MVP`,
-    description: opisSkrocony,
+    title: `${produkt.nazwa} - Chemia z Niemiec`,
+    description: seoDescription,
     openGraph: {
       title: `${produkt.nazwa} - Chemia z Niemiec`,
-      description: opisSkrocony,
+      description: seoDescription,
       images: [
         {
           url: zdjecieUrl,
@@ -58,12 +62,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ],
       type: 'website',
       locale: 'pl_PL',
-      siteName: 'Sklep MVP - Produkty z Niemiec'
+      siteName: 'Chemia z Niemiec'
     },
     twitter: {
       card: 'summary_large_image',
       title: `${produkt.nazwa} - Chemia z Niemiec`,
-      description: opisSkrocony,
+      description: seoDescription,
       images: [zdjecieUrl]
     }
   }
