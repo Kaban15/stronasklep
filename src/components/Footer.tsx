@@ -2,8 +2,6 @@ import Link from 'next/link'
 import { Mail, Phone, Clock, Facebook, Instagram, MapPin } from 'lucide-react'
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
-
   return (
     <footer className="bg-slate-900 text-slate-400">
       {/* Główna sekcja stopki */}
@@ -14,9 +12,8 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-bold text-lg mb-4">O nas</h3>
             <p className="text-sm leading-relaxed mb-4">
-              Specjalizujemy się w imporcie wysokiej jakości chemii gospodarczej
-              i zabawek prosto z Niemiec. Oferujemy oryginalne produkty w
-              najlepszych cenach z szybką dostawą w całej Polsce.
+              Twoje źródło oryginalnej chemii z Niemiec. Gwarancja jakości
+              i szybka wysyłka.
             </p>
             <div className="flex items-center gap-3 mt-6">
               <a
@@ -135,10 +132,10 @@ export default function Footer() {
                 <div>
                   <p className="text-sm text-slate-300">E-mail</p>
                   <a
-                    href="mailto:kontakt@sklep-mvp.pl"
+                    href="mailto:biuro@chemiazniemiec.pl"
                     className="text-sm hover:text-emerald-400 transition-colors"
                   >
-                    kontakt@sklep-mvp.pl
+                    biuro@chemiazniemiec.pl
                   </a>
                 </div>
               </li>
@@ -147,10 +144,10 @@ export default function Footer() {
                 <div>
                   <p className="text-sm text-slate-300">Telefon</p>
                   <a
-                    href="tel:+48123456789"
+                    href="tel:+48789789789"
                     className="text-sm hover:text-emerald-400 transition-colors"
                   >
-                    +48 123 456 789
+                    +48 789 789 789
                   </a>
                 </div>
               </li>
@@ -165,9 +162,8 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-slate-300">Adres</p>
-                  <p className="text-sm">ul. Przykładowa 123</p>
-                  <p className="text-sm">00-001 Warszawa</p>
+                  <p className="text-sm text-slate-300">Lokalizacja</p>
+                  <p className="text-sm">Warszawa, Polska</p>
                 </div>
               </li>
             </ul>
@@ -180,7 +176,7 @@ export default function Footer() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-center md:text-left">
-              © {currentYear} Sklep MVP. Wszystkie prawa zastrzeżone.
+              © 2024 ChemiazNIEMIEC. Wszelkie prawa zastrzeżone.
             </p>
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">Płatności:</span>
