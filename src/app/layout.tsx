@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CartSheet from '@/components/CartSheet'
 import CookieConsent from '@/components/CookieConsent'
+import MobileBottomNav from '@/components/MobileBottomNav'
 import { PostHogProvider } from '@/providers/PostHogProvider'
 import { PostHogPageView } from '@/providers/PostHogPageView'
 import { Toaster } from 'sonner'
@@ -63,12 +64,13 @@ export default function RootLayout({
           <PostHogProvider>
             <PostHogPageView />
             <Header />
-            <main className="min-h-screen">
+            <main className="min-h-screen pb-16 md:pb-0">
               {children}
             </main>
             <Footer />
             <CartSheet />
             <CookieConsent />
+            <MobileBottomNav />
             <Toaster position="top-center" richColors />
           </PostHogProvider>
           <GoogleAnalytics gaId="G-Q3GVLLDCR3" />
