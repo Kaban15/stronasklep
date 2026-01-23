@@ -18,8 +18,17 @@ export default function ProductCard({ produkt }: ProductCardProps) {
   const zdjecieUrl = produkt.zdjecia?.[0]?.url || '/placeholder.png'
   const niedostepny = produkt.iloscMagazynowa <= 0
 
-  // Cena jednostkowa - placeholder, docelowo z bazy danych
+  // Cena jednostkowa - obliczona na podstawie wydajności
   const cenaJednostkowa = `${produkt.cena.toFixed(2)} zł / szt.`
+
+  // Smart Efficiency - cena za jednostkę (np. pranie)
+  const hasEfficiency = produkt.efficiency && produkt.efficiency > 0 && produkt.unit
+  const pricePerUnit = hasEfficiency ? produkt.cena / produkt.efficiency! : null
+  const unitPriceText = hasEfficiency && pricePerUnit !== null
+    ? produkt.unit === 'pran'
+      ? `Tylko ${pricePerUnit.toFixed(2)} zł za pranie`
+      : `${pricePerUnit.toFixed(2)} zł / ${produkt.unit}`
+    : null
 
   const handleDodaj = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -72,9 +81,9 @@ export default function ProductCard({ produkt }: ProductCardProps) {
             </div>
           )}
 
-          {/* Badge Import DE */}
-          <span className="absolute top-3 left-3 bg-slate-800 text-white text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
-            Import DE
+          {/* Badge Zaufania - Import DE */}
+          <span className="absolute top-3 right-3 bg-white text-slate-800 text-xs font-bold px-2 py-1 rounded shadow-md">
+            Import DE 🇩🇪
           </span>
 
           {/* Overlay niedostepny */}
@@ -129,9 +138,15 @@ export default function ProductCard({ produkt }: ProductCardProps) {
               zł
             </span>
           </div>
-          <span className="text-xs text-gray-400">
-            {cenaJednostkowa}
-          </span>
+          {unitPriceText ? (
+            <span className="text-sm text-slate-500">
+              {unitPriceText}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">
+              {cenaJednostkowa}
+            </span>
+          )}
         </div>
 
         {/* Przycisk */}
