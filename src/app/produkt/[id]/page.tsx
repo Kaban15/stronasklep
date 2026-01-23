@@ -6,6 +6,7 @@ import { cache } from 'react'
 import type { Metadata } from 'next'
 import AddToCartButton from './AddToCartButton'
 import ProductTabs from './ProductTabs'
+import CrossSellWidget from '@/components/product/CrossSellWidget'
 import { Truck, ShieldCheck, Package, ChevronRight } from 'lucide-react'
 
 // ISR: odświeżanie co 10 minut
@@ -69,7 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProduktPage({ params }: Props) {
-  const produkt = await getProdukt(params.id)
+  const [produkt, wszystkieProdukty] = await Promise.all([
+    getProdukt(params.id),
+    pobierzProdukty()
+  ])
 
   if (!produkt) {
     notFound()
@@ -279,6 +283,14 @@ export default async function ProduktPage({ params }: Props) {
                   <p className="text-xs text-gray-500">Import z Niemiec</p>
                 </div>
               </div>
+            </div>
+
+            {/* Cross-sell widget */}
+            <div className="mt-6">
+              <CrossSellWidget
+                mainProduct={produkt}
+                allProducts={wszystkieProdukty}
+              />
             </div>
           </div>
         </div>

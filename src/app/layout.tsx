@@ -10,6 +10,7 @@ import CartSheet from '@/components/CartSheet'
 import CookieConsent from '@/components/CookieConsent'
 import { PostHogProvider } from '@/providers/PostHogProvider'
 import { PostHogPageView } from '@/providers/PostHogPageView'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] })
 
@@ -50,6 +51,7 @@ export default function RootLayout({
             <Footer />
             <CartSheet />
             <CookieConsent />
+            <Toaster position="top-center" richColors />
           </PostHogProvider>
           <GoogleAnalytics gaId="G-Q3GVLLDCR3" />
         </body>
