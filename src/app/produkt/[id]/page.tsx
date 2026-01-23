@@ -78,8 +78,17 @@ export default async function ProduktPage({ params }: Props) {
   const zdjecieUrl = produkt.zdjecia?.[0]?.url || '/placeholder.png'
   const niedostepny = produkt.iloscMagazynowa <= 0
 
-  // Cena jednostkowa - placeholder
+  // Cena jednostkowa - podstawowa
   const cenaJednostkowa = `${produkt.cena.toFixed(2)} zł / szt.`
+
+  // Smart Efficiency - cena za jednostkę (np. pranie)
+  const hasEfficiency = produkt.efficiency && produkt.efficiency > 0 && produkt.unit
+  const pricePerUnit = hasEfficiency ? (produkt.cena / produkt.efficiency!).toFixed(2) : null
+  const unitPriceText = hasEfficiency && pricePerUnit
+    ? produkt.unit === 'pran'
+      ? `Tylko ${pricePerUnit} zł za jedno pranie!`
+      : `${pricePerUnit} zł / ${produkt.unit}`
+    : null
 
   // Kategoria display name
   const kategoriaDisplay = produkt.kategoria === 'chemia'
@@ -134,9 +143,9 @@ export default async function ProduktPage({ params }: Props) {
                 </div>
               )}
 
-              {/* Badge Import DE */}
-              <span className="absolute top-4 left-4 bg-slate-800 text-white text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded">
-                Import DE
+              {/* Badge Zaufania - Import DE */}
+              <span className="absolute top-4 right-4 bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded shadow-md">
+                Import DE 🇩🇪
               </span>
 
               {/* Badge niedostępny */}
@@ -175,8 +184,8 @@ export default async function ProduktPage({ params }: Props) {
           <div className="lg:py-4">
             {/* Tagi */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="bg-slate-800 text-white text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
-                Import DE
+              <span className="bg-white text-slate-800 text-xs font-bold px-2 py-1 rounded shadow-sm border border-gray-100">
+                Import DE 🇩🇪
               </span>
               <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
                 {kategoriaDisplay}
@@ -208,9 +217,15 @@ export default async function ProduktPage({ params }: Props) {
                 </span>
                 <span className="text-2xl font-semibold text-gray-900">zł</span>
               </div>
-              <span className="text-sm text-gray-400 mt-1 block">
-                {cenaJednostkowa}
-              </span>
+              {unitPriceText ? (
+                <span className="text-base text-emerald-600 font-medium mt-1 block">
+                  {unitPriceText}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400 mt-1 block">
+                  {cenaJednostkowa}
+                </span>
+              )}
             </div>
 
             {/* Dostępność */}
@@ -282,7 +297,11 @@ export default async function ProduktPage({ params }: Props) {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-2xl font-bold text-gray-900">{produkt.cena.toFixed(2)} zł</p>
-            <p className="text-xs text-gray-500">{cenaJednostkowa}</p>
+            {unitPriceText ? (
+              <p className="text-xs text-emerald-600 font-medium">{unitPriceText}</p>
+            ) : (
+              <p className="text-xs text-gray-500">{cenaJednostkowa}</p>
+            )}
           </div>
           <button
             disabled={niedostepny}
