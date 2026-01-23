@@ -12,8 +12,8 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-bold text-lg mb-4">O nas</h3>
             <p className="text-sm leading-relaxed mb-4">
-              Twoje źródło oryginalnej chemii z Niemiec. Gwarancja jakości
-              i szybka wysyłka.
+              Twoje zaufane źródło oryginalnej chemii z Niemiec. Szybka wysyłka
+              i gwarancja jakości.
             </p>
             <div className="flex items-center gap-3 mt-6">
               <a
@@ -132,22 +132,22 @@ export default function Footer() {
                 <div>
                   <p className="text-sm text-slate-300">E-mail</p>
                   <a
-                    href="mailto:biuro@chemiazniemiec.pl"
+                    href="mailto:kontakt@chemiazniemiec.pl"
                     className="text-sm hover:text-emerald-400 transition-colors"
                   >
-                    biuro@chemiazniemiec.pl
+                    kontakt@chemiazniemiec.pl
                   </a>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-slate-300">Telefon</p>
+                  <p className="text-sm text-slate-300">Infolinia</p>
                   <a
                     href="tel:+48789789789"
                     className="text-sm hover:text-emerald-400 transition-colors"
                   >
-                    +48 789 789 789
+                    789-789-789
                   </a>
                 </div>
               </li>
@@ -176,7 +176,7 @@ export default function Footer() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-center md:text-left">
-              © 2024 ChemiazNIEMIEC. Wszelkie prawa zastrzeżone.
+              © 2025 ChemiazNIEMIEC. Wszelkie prawa zastrzeżone.
             </p>
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">Płatności:</span>

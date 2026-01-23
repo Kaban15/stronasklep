@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { SlidersHorizontal, X, ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { SlidersHorizontal, X, ChevronDown, ChevronUp, ArrowUpDown, Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import type { Produkt } from '@/lib/airtable'
 
@@ -12,6 +13,9 @@ interface ProductBrowserProps {
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc'
 
 export default function ProductBrowser({ products }: ProductBrowserProps) {
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('search') || ''
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SortOption>('default')
@@ -41,14 +45,25 @@ export default function ProductBrowser({ products }: ProductBrowserProps) {
   const filteredProducts = useMemo(() => {
     let result = [...products]
 
-    // Filter by category
-    if (selectedCategories.length > 0) {
-      result = result.filter((p) => p.category && selectedCategories.includes(p.category))
-    }
+    // Filter by search query (has priority - ignores category/brand filters when searching)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter((p) =>
+        p.nazwa.toLowerCase().includes(query) ||
+        p.opis?.toLowerCase().includes(query) ||
+        p.brand?.toLowerCase().includes(query)
+      )
+    } else {
+      // Only apply category/brand filters when not searching
+      // Filter by category
+      if (selectedCategories.length > 0) {
+        result = result.filter((p) => p.category && selectedCategories.includes(p.category))
+      }
 
-    // Filter by brand
-    if (selectedBrands.length > 0) {
-      result = result.filter((p) => p.brand && selectedBrands.includes(p.brand))
+      // Filter by brand
+      if (selectedBrands.length > 0) {
+        result = result.filter((p) => p.brand && selectedBrands.includes(p.brand))
+      }
     }
 
     // Sort
@@ -65,7 +80,7 @@ export default function ProductBrowser({ products }: ProductBrowserProps) {
     }
 
     return result
-  }, [products, selectedCategories, selectedBrands, sortBy])
+  }, [products, selectedCategories, selectedBrands, sortBy, searchQuery])
 
   // Get available options based on current filters (dynamic counting)
   const availableOptions = useMemo(() => {
@@ -340,8 +355,26 @@ export default function ProductBrowser({ products }: ProductBrowserProps) {
             </div>
           </div>
 
+          {/* Search Results Banner */}
+          {searchQuery && (
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-blue-800">
+                  Wyniki wyszukiwania dla: <strong>&quot;{searchQuery}&quot;</strong>
+                </span>
+              </div>
+              <a
+                href="/"
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Wyczyść
+              </a>
+            </div>
+          )}
+
           {/* Active Filters Pills */}
-          {hasActiveFilters && (
+          {hasActiveFilters && !searchQuery && (
             <div className="flex flex-wrap gap-2 mb-4">
               {selectedCategories.map((cat) => (
                 <button

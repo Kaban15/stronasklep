@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { pobierzProdukty } from '@/lib/airtable'
 import HeroGrid from '@/components/HeroGrid'
 import ProductBrowser from '@/components/ProductBrowser'
@@ -24,7 +25,15 @@ export default async function Home() {
         </div>
 
         {/* Product Browser z filtrami i sortowaniem */}
-        <ProductBrowser products={produkty} />
+        <Suspense fallback={
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg h-64 animate-pulse" />
+            ))}
+          </div>
+        }>
+          <ProductBrowser products={produkty} />
+        </Suspense>
       </section>
 
       {/* Footer info */}

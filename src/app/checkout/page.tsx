@@ -315,7 +315,11 @@ export default function CheckoutPage() {
                       type="tel"
                       {...register('telefon', {
                         required: 'Telefon jest wymagany',
-                        minLength: { value: 9, message: 'Numer za krótki' }
+                        minLength: { value: 9, message: 'Numer musi mieć min. 9 cyfr' },
+                        pattern: {
+                          value: /^[\d\s\-+()]{9,}$/,
+                          message: 'Nieprawidłowy numer telefonu'
+                        }
                       })}
                       className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
                         errors.telefon ? 'border-red-300 bg-red-50' : 'border-gray-200'
@@ -365,7 +369,7 @@ export default function CheckoutPage() {
                           required: 'Kod pocztowy jest wymagany',
                           pattern: {
                             value: /^\d{2}-\d{3}$/,
-                            message: 'Format: 00-000'
+                            message: 'Błędny format (np. 01-234)'
                           }
                         })}
                         className={`w-full h-12 border rounded-xl px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent ${

@@ -2,14 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/hooks/use-cart'
 import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
-import { ShoppingCart, Menu, X, User } from 'lucide-react'
+import { ShoppingCart, Menu, X, User, Search } from 'lucide-react'
 
 export default function Header() {
+  const router = useRouter()
   const { getTotalItems, openCart } = useCart()
   const [totalItems, setTotalItems] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/?search=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchQuery('')
+      setSearchOpen(false)
+      setMobileMenuOpen(false)
+    }
+  }
 
   // Hydration fix - aktualizuj po mount
   useEffect(() => {
@@ -31,37 +45,60 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <span className="text-xl font-bold text-gray-900">
-              Sklep<span className="text-emerald-600">MVP</span>
+              Chemia<span className="text-emerald-600">zNIEMIEC</span>
             </span>
             <span className="hidden sm:inline-block bg-slate-800 text-white text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded">
               DE
             </span>
           </Link>
 
-          {/* Nawigacja desktop */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Strona główna
-            </Link>
-            <Link
-              href="/?kategoria=chemia"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Chemia gospodarcza
-            </Link>
-            <Link
-              href="/?kategoria=zabawki"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Zabawki
-            </Link>
-          </nav>
+          {/* Desktop: Nawigacja + Wyszukiwarka */}
+          <div className="hidden md:flex items-center flex-1 justify-center gap-8">
+            <nav className="flex items-center space-x-6">
+              <Link
+                href="/"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Strona główna
+              </Link>
+              <Link
+                href="/?kategoria=chemia"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Chemia
+              </Link>
+              <Link
+                href="/?kategoria=zabawki"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Zabawki
+              </Link>
+            </nav>
+
+            {/* Desktop Search */}
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Szukaj produktów..."
+                className="w-64 h-10 pl-10 pr-4 bg-gray-100 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </form>
+          </div>
 
           {/* Akcje */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Mobile Search Button */}
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="md:hidden flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+              aria-label="Szukaj"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
             {/* Auth - zalogowany */}
             <SignedIn>
               <Link
@@ -118,6 +155,30 @@ export default function Header() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar */}
+        {searchOpen && (
+          <div className="md:hidden border-t border-gray-100 py-3 px-4">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Szukaj produktów..."
+                autoFocus
+                className="w-full h-11 pl-10 pr-4 bg-gray-100 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
