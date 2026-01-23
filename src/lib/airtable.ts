@@ -19,6 +19,8 @@ export interface Produkt {
   status: 'aktywny' | 'nieaktywny' | 'wyprzedany'
   efficiency: number | null
   unit: string | null
+  category?: string
+  brand?: string
 }
 
 export interface ProduktRaw {
@@ -33,6 +35,7 @@ export interface ProduktRaw {
     Status?: string
     Wydajnosc?: number
     Jednostka?: string
+    Marka?: string
   }
 }
 
@@ -47,7 +50,9 @@ function mapProdukt(record: ProduktRaw): Produkt {
     kategoria: (record.fields.Kategoria as 'chemia' | 'zabawki') || 'chemia',
     status: (record.fields.Status as 'aktywny' | 'nieaktywny' | 'wyprzedany') || 'aktywny',
     efficiency: record.fields.Wydajnosc ?? null,
-    unit: record.fields.Jednostka ?? null
+    unit: record.fields.Jednostka ?? null,
+    category: record.fields.Kategoria || undefined,
+    brand: record.fields.Marka || undefined
   }
 }
 

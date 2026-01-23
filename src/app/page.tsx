@@ -1,117 +1,30 @@
-import { pobierzProdukty, pobierzProduktyWedlugKategorii } from '@/lib/airtable'
-import ProductGrid from '@/components/ProductGrid'
+import { pobierzProdukty } from '@/lib/airtable'
 import HeroGrid from '@/components/HeroGrid'
+import ProductBrowser from '@/components/ProductBrowser'
 
 // ISR: odświeżanie co 10 minut
 export const revalidate = 600
 
-interface Props {
-  searchParams: { kategoria?: string }
-}
-
-export default async function Home({ searchParams }: Props) {
-  const kategoria = searchParams.kategoria
-
-  const produkty = kategoria
-    ? await pobierzProduktyWedlugKategorii(kategoria)
-    : await pobierzProdukty()
+export default async function Home() {
+  const produkty = await pobierzProdukty()
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Grid - Bento Style */}
       <HeroGrid />
 
-      {/* Kategorie - filtry */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="/"
-              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                !kategoria
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Wszystkie
-            </a>
-            <a
-              href="/?kategoria=chemia"
-              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                kategoria === 'chemia'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Chemia gospodarcza
-            </a>
-            <a
-              href="/?kategoria=zabawki"
-              className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                kategoria === 'zabawki'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Zabawki
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Lista produktow */}
-      <section id="produkty" className="container mx-auto px-4 py-10 scroll-mt-4">
+      {/* Lista produktow z filtrami */}
+      <section id="produkty" className="container mx-auto px-4 py-8 scroll-mt-4">
         {/* Naglowek sekcji */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {kategoria
-                ? kategoria === 'chemia'
-                  ? 'Chemia gospodarcza'
-                  : kategoria === 'zabawki'
-                    ? 'Zabawki'
-                    : kategoria
-                : 'Wszystkie produkty'}
-            </h2>
-            <p className="text-gray-500 text-sm mt-1">
-              {produkty.length} {produkty.length === 1 ? 'produkt' : produkty.length < 5 ? 'produkty' : 'produktów'}
-            </p>
-          </div>
-          {kategoria && (
-            <a
-              href="/"
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Wszystkie produkty
-            </a>
-          )}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Nasze produkty</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Oryginalna chemia gospodarcza prosto z Niemiec
+          </p>
         </div>
 
-        {/* Grid produktow */}
-        {produkty.length > 0 ? (
-          <ProductGrid products={produkty} />
-        ) : (
-          <div className="text-center py-16 bg-white rounded-lg border border-gray-100">
-            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-gray-500 text-lg mb-2">
-              Brak produktów w tej kategorii
-            </p>
-            <a
-              href="/"
-              className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Wróć do wszystkich produktów
-            </a>
-          </div>
-        )}
+        {/* Product Browser z filtrami i sortowaniem */}
+        <ProductBrowser products={produkty} />
       </section>
 
       {/* Footer info */}
