@@ -60,7 +60,7 @@ export default async function Home({ searchParams }: Props) {
       </section>
 
       {/* Lista produktow */}
-      <section className="container mx-auto px-4 py-10">
+      <section id="produkty" className="container mx-auto px-4 py-10 scroll-mt-4">
         {/* Naglowek sekcji */}
         <div className="flex items-center justify-between mb-8">
           <div>

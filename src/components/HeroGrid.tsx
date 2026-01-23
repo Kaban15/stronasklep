@@ -12,8 +12,8 @@ export default function HeroGrid() {
 
             {/* Main Banner - 2 cols x 2 rows */}
             <Link
-              href="/?kategoria=chemia"
-              className="relative md:col-span-2 md:row-span-2 rounded-xl overflow-hidden group min-h-[280px] md:min-h-0"
+              href="/#produkty"
+              className="relative md:col-span-2 md:row-span-2 rounded-xl overflow-hidden group min-h-[280px] md:min-h-0 cursor-pointer"
             >
               <Image
                 src="https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&q=80&w=1200"
@@ -45,8 +45,8 @@ export default function HeroGrid() {
 
             {/* Top Right Banner - 2 cols x 1 row */}
             <Link
-              href="/?kategoria=chemia"
-              className="relative md:col-span-2 rounded-xl overflow-hidden group min-h-[200px] md:min-h-0"
+              href="/#produkty"
+              className="relative md:col-span-2 rounded-xl overflow-hidden group min-h-[200px] md:min-h-0 cursor-pointer"
             >
               <Image
                 src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800"
@@ -73,9 +73,12 @@ export default function HeroGrid() {
             </Link>
 
             {/* Bottom Right Banner - 2 cols x 1 row (Dark background) */}
-            <div className="relative md:col-span-2 rounded-xl overflow-hidden bg-slate-900 min-h-[160px] md:min-h-0">
+            <Link
+              href="/#produkty"
+              className="relative md:col-span-2 rounded-xl overflow-hidden bg-slate-900 min-h-[160px] md:min-h-0 cursor-pointer group"
+            >
               {/* Truck watermark icon */}
-              <div className="absolute right-4 bottom-4 opacity-10">
+              <div className="absolute right-4 bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Truck className="w-32 h-32 md:w-40 md:h-40 text-white" strokeWidth={1} />
               </div>
 
@@ -96,7 +99,7 @@ export default function HeroGrid() {
                   Przy zamówieniach powyżej 250 zł
                 </p>
               </div>
-            </div>
+            </Link>
 
           </div>
         </div>
