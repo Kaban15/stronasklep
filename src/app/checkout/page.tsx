@@ -44,6 +44,7 @@ export default function CheckoutPage() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const [mounted, setMounted] = useState(false)
   const [showPromoCode, setShowPromoCode] = useState(false)
+  const [orderLocked, setOrderLocked] = useState(false) // Blokada wielokrotnego wysyłania
 
   const {
     register,
@@ -119,6 +120,10 @@ export default function CheckoutPage() {
 
 
   const onSubmit = async (data: CheckoutFormData) => {
+    // Blokada wielokrotnego wysyłania (zapadka)
+    if (orderLocked) return
+    setOrderLocked(true)
+
     // Payload zgodny z wymaganiami n8n webhook
     const payload = {
       imie: data.imie,
@@ -172,6 +177,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Błąd zamówienia:', error)
       alert(error instanceof Error ? error.message : 'Wystąpił błąd')
+      setOrderLocked(false) // Odblokuj w przypadku błędu, aby można było spróbować ponownie
     }
   }
 
@@ -608,16 +614,16 @@ export default function CheckoutPage() {
                 {/* Przycisk */}
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-14 mt-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={isSubmitting || orderLocked}
+                  className="w-full h-14 mt-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || orderLocked ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Przetwarzanie zamówienia...</span>
+                      <span>Przetwarzanie...</span>
                     </>
                   ) : (
-                    <span>Złóż zamówienie</span>
+                    <span>Zamów i zapłać</span>
                   )}
                 </button>
 
