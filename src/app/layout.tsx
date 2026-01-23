@@ -4,6 +4,7 @@ import { GoogleAnalytics } from '@next/third-parties/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { plPL } from '@clerk/localizations'
 import './globals.css'
+import TopBar from '@/components/TopBar'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CartSheet from '@/components/CartSheet'
@@ -63,6 +64,7 @@ export default function RootLayout({
         <body className={inter.className}>
           <PostHogProvider>
             <PostHogPageView />
+            <TopBar />
             <Header />
             <main className="min-h-screen pb-16 md:pb-0">
               {children}
