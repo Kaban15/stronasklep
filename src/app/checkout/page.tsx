@@ -197,7 +197,7 @@ export default function CheckoutPage() {
       discountPercent: discount ? discount.value : 0,
       shipping: shippingCost,
       paymentFee: paymentFee,
-      uwagi: data.uwagi || ''
+      Notatki: data.uwagi || ''
     }
 
     try {
