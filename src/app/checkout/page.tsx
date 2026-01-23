@@ -167,9 +167,15 @@ export default function CheckoutPage() {
 
 
   const onSubmit = async (data: CheckoutFormData) => {
-    // Blokada wielokrotnego wysyłania (zapadka)
-    if (orderLocked) return
+    // Bezpiecznik - podwójna blokada wielokrotnego wysyłania
+    if (isSubmitting || orderLocked) return
     setOrderLocked(true)
+
+    // Tworzenie czytelnego podsumowania koszyka dla n8n/maili
+    // Format: "Nazwa Produktu x2 (79.98 zł)"
+    const podsumowanieKoszyka = items
+      .map(item => `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`)
+      .join('\n')
 
     // Payload zgodny z wymaganiami n8n webhook
     const payload = {
@@ -188,15 +194,17 @@ export default function CheckoutPage() {
         id: item.id,
         nazwa: item.nazwa,
         ilosc: item.ilosc,
-        cena: item.cena
+        cena: Number(item.cena) // Cena jako liczba
       })),
-      total: total, // Już zawiera obniżoną kwotę
-      // Dodatkowe pola pomocnicze
-      subtotal: subtotal,
-      discountAmount: discountAmount,
+      // Podsumowanie tekstowe dla Airtable/maili
+      PodsumowanieKoszyka: podsumowanieKoszyka,
+      // Kwoty jako liczby
+      total: Number(total.toFixed(2)),
+      subtotal: Number(subtotal.toFixed(2)),
+      discountAmount: Number(discountAmount.toFixed(2)),
       discountPercent: discount ? discount.value : 0,
-      shipping: shippingCost,
-      paymentFee: paymentFee,
+      shipping: Number(shippingCost),
+      paymentFee: Number(paymentFee),
       Notatki: data.uwagi || ''
     }
 
