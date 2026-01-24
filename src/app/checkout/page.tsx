@@ -47,7 +47,7 @@ export default function CheckoutPage() {
   const { user, isLoaded: isUserLoaded } = useUser()
   const [mounted, setMounted] = useState(false)
   const [showPromoCode, setShowPromoCode] = useState(false)
-  const [orderLocked, setOrderLocked] = useState(false) // Blokada wielokrotnego wysyłania
+  const [isProcessing, setIsProcessing] = useState(false) // BRUTALNA blokada - raz ustawione, nie znika
 
   // Stan kodu rabatowego
   const [discount, setDiscount] = useState<{ code: string; value: number } | null>(null)
@@ -166,10 +166,21 @@ export default function CheckoutPage() {
   }
 
 
+  // BRUTALNY handler formularza
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault() // LINIA 1: Zawsze blokuj domyślne zachowanie
+    if (isProcessing) return // LINIA 2: Jeśli już przetwarzamy - WYJDŹ
+    setIsProcessing(true) // LINIA 3: Zablokuj na zawsze (do przekierowania)
+
+    // Teraz wywołaj walidację react-hook-form
+    handleSubmit(onSubmit)()
+  }
+
   const onSubmit = async (data: CheckoutFormData) => {
-    // Bezpiecznik - podwójna blokada wielokrotnego wysyłania
-    if (isSubmitting || orderLocked) return
-    setOrderLocked(true)
+    // Dodatkowy bezpiecznik na wypadek obejścia handleFormSubmit
+    if (isProcessing === false) {
+      setIsProcessing(true)
+    }
 
     // Tworzenie czytelnego podsumowania koszyka dla n8n/maili
     // Format: "Nazwa Produktu x2 (79.98 zł)"
@@ -234,7 +245,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Błąd zamówienia:', error)
       alert(error instanceof Error ? error.message : 'Wystąpił błąd')
-      setOrderLocked(false) // Odblokuj w przypadku błędu, aby można było spróbować ponownie
+      setIsProcessing(false) // Odblokuj w przypadku błędu, aby można było spróbować ponownie
     }
   }
 
@@ -301,7 +312,7 @@ export default function CheckoutPage() {
           Finalizacja zamówienia
         </h1>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleFormSubmit}>
           <div className="grid lg:grid-cols-5 gap-8">
             {/* Lewa kolumna - Formularz */}
             <div className="lg:col-span-3 space-y-6">
@@ -729,21 +740,21 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Przycisk */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting || orderLocked}
-                  className="w-full h-14 mt-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting || orderLocked ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Przetwarzanie...</span>
-                    </>
-                  ) : (
+                {/* Przycisk - BRUTALNIE ukryty gdy przetwarzanie */}
+                {isProcessing ? (
+                  <div className="w-full h-14 mt-6 bg-slate-200 text-slate-600 rounded-xl font-semibold flex items-center justify-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Przetwarzanie zamówienia...</span>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full h-14 mt-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
                     <span>Zamów i zapłać</span>
-                  )}
-                </button>
+                  </button>
+                )}
 
                 {/* Info */}
                 <p className="text-xs text-gray-500 text-center mt-4">
