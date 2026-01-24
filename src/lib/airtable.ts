@@ -269,23 +269,33 @@ export interface CreateOrderResult {
 }
 
 export async function createOrder(orderData: OrderData): Promise<CreateOrderResult> {
-  // Budowanie podsumowania koszyka (backup jeśli nie przyszło z frontu)
-  const summary = orderData.PodsumowanieKoszyka || orderData.produkty
-    .map(p => `${p.nazwa} x${p.ilosc} (${(p.cena * p.ilosc).toFixed(2)} zł)`)
-    .join('\n')
+  // 🔥 DEBUG: Co przyszło do funkcji?
+  console.log('🔥🔥🔥 CREATE ORDER WYWOŁANE 🔥🔥🔥')
+  console.log('🔥 orderData.PodsumowanieKoszyka:', orderData.PodsumowanieKoszyka)
+  console.log('🔥 orderData.Notatki:', orderData.Notatki)
+  console.log('🔥 orderData.produkty:', JSON.stringify(orderData.produkty))
 
-  const notes = orderData.Notatki || ''
+  // CRITICAL: Buduj summary ZAWSZE z produktów jeśli przyszły
+  let summary = ''
+  if (orderData.PodsumowanieKoszyka && orderData.PodsumowanieKoszyka.trim() !== '') {
+    summary = orderData.PodsumowanieKoszyka
+    console.log('✅ Używam PodsumowanieKoszyka z inputu')
+  } else if (orderData.produkty && orderData.produkty.length > 0) {
+    summary = orderData.produkty
+      .map(p => `${p.nazwa} x${p.ilosc} (${(p.cena * p.ilosc).toFixed(2)} zł)`)
+      .join('\n')
+    console.log('✅ Zbudowałem summary z produktów:', summary)
+  } else {
+    summary = 'BRAK PRODUKTÓW - BŁĄD!'
+    console.error('❌ Brak produktów i brak PodsumowanieKoszyka!')
+  }
+
+  const notes = orderData.Notatki?.trim() || ''
+  console.log('🔥 Final summary:', summary)
+  console.log('🔥 Final notes:', notes)
 
   // Pełny adres jako string
   const adresDostawy = `${orderData.imie} ${orderData.nazwisko}\n${orderData.adres.ulica}\n${orderData.adres.kodPocztowy} ${orderData.adres.miasto}\nTel: ${orderData.telefon}`
-
-  // DEBUG: Loguj przed wysłaniem
-  console.log('--- DEBUG AIRTABLE PAYLOAD ---')
-  console.log('PodsumowanieKoszyka:', summary)
-  console.log('Notatki:', notes)
-  console.log('KwotaCalkowita:', orderData.total)
-  console.log('AdresDostawy:', adresDostawy)
-  console.log('------------------------------')
 
   const url = `https://api.airtable.com/v0/${BASE_ID}/Zamowienia`
 
@@ -297,8 +307,8 @@ export async function createOrder(orderData: OrderData): Promise<CreateOrderResu
       "MetodaPlatnosci": orderData.metodaPlatnosci,
       "KwotaCalkowita": orderData.total,
       "Status": "nowe",
-      "PodsumowanieKoszyka": summary,
-      "Notatki": notes,
+      "PodsumowanieKoszyka": summary,  // <-- TO MUSI BYĆ WYPEŁNIONE
+      "Notatki": notes,                 // <-- I TO
       "UzytyKodRabatowy": orderData.uzyty_kod_rabatowy || '',
       "Subtotal": orderData.subtotal,
       "KosztDostawy": orderData.shipping,
@@ -307,9 +317,11 @@ export async function createOrder(orderData: OrderData): Promise<CreateOrderResu
     }
   }
 
-  console.log('--- FULL AIRTABLE PAYLOAD ---')
-  console.log(JSON.stringify(airtablePayload, null, 2))
-  console.log('-----------------------------')
+  // 🔥 CRITICAL: Sprawdź co DOKŁADNIE wysyłamy do Airtable
+  console.log('🔥🔥🔥 WYSYŁAM DO AIRTABLE 🔥🔥🔥')
+  console.log('🔥 PodsumowanieKoszyka w payload:', airtablePayload.fields.PodsumowanieKoszyka)
+  console.log('🔥 Notatki w payload:', airtablePayload.fields.Notatki)
+  console.log('🔥 Full payload:', JSON.stringify(airtablePayload, null, 2))
 
   try {
     const response = await fetch(url, {
