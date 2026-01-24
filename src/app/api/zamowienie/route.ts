@@ -1,85 +1,79 @@
 import { NextResponse } from 'next/server';
-import { createOrder, OrderData } from '@/lib/airtable';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 🔥🔥🔥 MEGA DEBUG - LOGUJ WSZYSTKO 🔥🔥🔥
-    console.log('🔥🔥🔥 API ROUTE /api/zamowienie WYWOŁANE 🔥🔥🔥');
-    console.log('🔥 RAW BODY KEYS:', Object.keys(body));
-    console.log('🔥 body.PodsumowanieKoszyka:', body.PodsumowanieKoszyka);
-    console.log('🔥 body.Notatki:', body.Notatki);
-    console.log('🔥 body.produkty length:', body.produkty?.length);
-    console.log('🔥 FULL BODY:', JSON.stringify(body, null, 2));
+    console.log('--- API /api/zamowienie ---');
+    console.log('Received order data');
 
-    // CRITICAL: Wymuś wartości - jeśli puste, ustaw debug string
-    const podsumowanie = body.PodsumowanieKoszyka || 'BACKEND: brak PodsumowanieKoszyka z frontu';
-    const notatki = body.Notatki || '';
+    // ============================================
+    // PRZYGOTOWANIE BEZPIECZNYCH DANYCH
+    // ============================================
 
-    console.log('🔥 FINAL podsumowanie:', podsumowanie);
-    console.log('🔥 FINAL notatki:', notatki);
+    // Bezpieczne wartości tekstowe
+    const safeSummary = String(body.PodsumowanieKoszyka || 'Brak podsumowania');
+    const safeNotes = String(body.Notatki || '');
 
-    // 1. ZAPISZ BEZPOŚREDNIO DO AIRTABLE
-    const orderData: OrderData = {
-      imie: body.imie,
-      nazwisko: body.nazwisko,
-      email: body.email,
-      telefon: body.telefon,
-      adres: body.adres,
-      metodaPlatnosci: body.metodaPlatnosci,
-      produkty: body.produkty || [],
-      total: body.total,
-      subtotal: body.subtotal,
-      shipping: body.shipping,
-      paymentFee: body.paymentFee,
-      discountAmount: body.discountAmount || 0,
-      discountPercent: body.discountPercent || 0,
-      uzyty_kod_rabatowy: body.uzyty_kod_rabatowy || '',
-      Notatki: notatki,
-      PodsumowanieKoszyka: podsumowanie
+    // Bezpieczne wartości liczbowe
+    const safeTotal = Number(body.total) || 0;
+    const safeSubtotal = Number(body.subtotal) || 0;
+    const safeShipping = Number(body.shipping) || 0;
+    const safePaymentFee = Number(body.paymentFee) || 0;
+    const safeDiscountAmount = Number(body.discountAmount) || 0;
+    const safeDiscountPercent = Number(body.discountPercent) || 0;
+
+    console.log('safeSummary:', safeSummary);
+    console.log('safeNotes:', safeNotes);
+    console.log('safeTotal:', safeTotal);
+
+    // ============================================
+    // WYŚLIJ TYLKO DO N8N - N8N TWORZY ZAMÓWIENIE W AIRTABLE
+    // ============================================
+    const N8N_URL = 'https://n8n.kaban.click/webhook/zamowieniev2';
+
+    // Payload z nadpisanymi bezpiecznymi wartościami
+    const n8nPayload = {
+      ...body,
+      // Nadpisz pola obliczonymi bezpiecznymi stringami
+      PodsumowanieKoszyka: safeSummary,
+      Notatki: safeNotes,
+      total: safeTotal,
+      subtotal: safeSubtotal,
+      shipping: safeShipping,
+      paymentFee: safePaymentFee,
+      discountAmount: safeDiscountAmount,
+      discountPercent: safeDiscountPercent
     };
 
-    console.log('🔥 orderData.PodsumowanieKoszyka:', orderData.PodsumowanieKoszyka);
-    console.log('🔥 orderData.Notatki:', orderData.Notatki);
+    console.log('Sending to n8n...');
 
-    const airtableResult = await createOrder(orderData);
+    const n8nResponse = await fetch(N8N_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(n8nPayload),
+    });
 
-    if (!airtableResult.success) {
-      console.error('Błąd zapisu do Airtable:', airtableResult.error);
+    if (!n8nResponse.ok) {
+      const errorText = await n8nResponse.text();
+      console.error('n8n webhook failed:', n8nResponse.status, errorText);
       return NextResponse.json(
-        { error: 'Błąd zapisu zamówienia: ' + airtableResult.error },
+        { error: 'Błąd przetwarzania zamówienia' },
         { status: 500 }
       );
     }
 
-    console.log('Zamówienie zapisane w Airtable, ID:', airtableResult.id);
+    // Pobierz odpowiedź z n8n (oczekujemy numeru zamówienia)
+    const n8nResult = await n8nResponse.json();
 
-    // 2. WYŚLIJ DO N8N (dla maili)
-    const N8N_URL = 'https://n8n.kaban.click/webhook/zamowieniev2';
+    console.log('n8n response:', JSON.stringify(n8nResult));
 
-    try {
-      const n8nResponse = await fetch(N8N_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...body,
-          airtableRecordId: airtableResult.id
-        }),
-      });
-
-      if (!n8nResponse.ok) {
-        console.warn('n8n webhook failed, but order saved to Airtable');
-      }
-    } catch (n8nError) {
-      console.warn('n8n webhook error (order still saved):', n8nError);
-    }
-
-    // Zwróć sukces z ID z Airtable
+    // n8n powinien zwrócić: { success: true, id: "recXXX", numerZamowienia: 89 }
+    // lub podobną strukturę - dostosuj do tego co zwraca Twój workflow n8n
     return NextResponse.json({
       success: true,
-      id: airtableResult.id,
-      numerZamowienia: airtableResult.numerZamowienia
+      id: n8nResult.id || n8nResult.airtableRecordId || null,
+      numerZamowienia: n8nResult.numerZamowienia || n8nResult.orderNumber || null
     });
 
   } catch (error) {
