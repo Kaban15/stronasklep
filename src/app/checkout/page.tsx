@@ -184,9 +184,16 @@ export default function CheckoutPage() {
 
     // Tworzenie czytelnego podsumowania koszyka dla n8n/maili
     // Format: "Nazwa Produktu x2 (79.98 zł)"
-    const podsumowanieKoszyka = items
-      .map(item => `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`)
-      .join('\n')
+    const podsumowanieKoszyka = items.length > 0
+      ? items.map(item => `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`).join('\n')
+      : 'Brak produktów'
+
+    // DEBUG - loguj do konsoli przeglądarki
+    console.log('=== CHECKOUT DEBUG ===')
+    console.log('Items:', items)
+    console.log('PodsumowanieKoszyka:', podsumowanieKoszyka)
+    console.log('Notatki (uwagi):', data.uwagi)
+    console.log('======================')
 
     // Payload zgodny z wymaganiami n8n webhook
     const payload = {
@@ -218,6 +225,11 @@ export default function CheckoutPage() {
       paymentFee: Number(paymentFee),
       Notatki: data.uwagi || ''
     }
+
+    // DEBUG - loguj cały payload
+    console.log('=== PAYLOAD DO WYSŁANIA ===')
+    console.log(JSON.stringify(payload, null, 2))
+    console.log('===========================')
 
     try {
       const response = await fetch('/api/zamowienie', {

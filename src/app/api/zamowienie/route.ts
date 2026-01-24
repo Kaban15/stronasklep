@@ -6,7 +6,14 @@ export async function POST(request: Request) {
 
     // NOWY ADRES N8N (V2)
     const N8N_URL = 'https://n8n.kaban.click/webhook/zamowieniev2';
-    console.log('Wysyłanie zamówienia do:', N8N_URL);
+
+    // DEBUG: Loguj kluczowe pola przed wysłaniem
+    console.log('=== ZAMÓWIENIE DEBUG ===');
+    console.log('PodsumowanieKoszyka:', body.PodsumowanieKoszyka);
+    console.log('Notatki:', body.Notatki);
+    console.log('Total:', body.total);
+    console.log('Produkty:', JSON.stringify(body.produkty));
+    console.log('========================');
 
     const response = await fetch(N8N_URL, {
       method: 'POST',
