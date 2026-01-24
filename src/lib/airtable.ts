@@ -269,63 +269,59 @@ export interface CreateOrderResult {
 }
 
 export async function createOrder(orderData: OrderData): Promise<CreateOrderResult> {
-  // 🔥 DEBUG: Co przyszło do funkcji?
-  console.log('🔥🔥🔥 CREATE ORDER WYWOŁANE 🔥🔥🔥')
-  console.log('🔥 orderData.PodsumowanieKoszyka:', orderData.PodsumowanieKoszyka)
-  console.log('🔥 orderData.Notatki:', orderData.Notatki)
-  console.log('🔥 orderData.produkty:', JSON.stringify(orderData.produkty))
+  // ============================================
+  // DEFENSIVE PROGRAMMING - PROSTE I BEZPIECZNE
+  // ============================================
 
-  // CRITICAL: Buduj summary - WYMUŚ wartość do Airtable
-  let summary = ''
-  if (orderData.PodsumowanieKoszyka && orderData.PodsumowanieKoszyka.trim() !== '') {
-    summary = orderData.PodsumowanieKoszyka
-    console.log('✅ Używam PodsumowanieKoszyka z inputu:', summary.substring(0, 50))
-  } else if (orderData.produkty && orderData.produkty.length > 0) {
-    summary = orderData.produkty
-      .map(p => `${p.nazwa} x${p.ilosc} (${(p.cena * p.ilosc).toFixed(2)} zł)`)
-      .join('\n')
-    console.log('✅ Zbudowałem summary z produktów:', summary)
-  } else {
-    // DEBUG: Wymuś tekst żeby w Airtable było widać że coś nie działa
-    summary = `[DEBUG] Brak danych - produkty: ${orderData.produkty?.length || 0}, timestamp: ${new Date().toISOString()}`
-    console.error('❌ Brak produktów i brak PodsumowanieKoszyka! Używam debug string')
-  }
+  // Zaufaj danym z frontendu - nie przeliczaj na serwerze
+  const safeSummary = String(orderData?.PodsumowanieKoszyka || 'Brak podsumowania')
+  const safeNotes = String(orderData?.Notatki || '')
 
-  const notes = orderData.Notatki?.trim() || ''
+  // Logowanie dla debugowania
+  console.log('--- SAVE TO AIRTABLE ---')
+  console.log('Summary:', safeSummary)
+  console.log('Notes:', safeNotes)
 
-  console.log('🔥🔥🔥 FINAL VALUES FOR AIRTABLE 🔥🔥🔥')
-  console.log('🔥 summary length:', summary.length)
-  console.log('🔥 summary:', summary)
-  console.log('🔥 notes:', notes || '(empty)')
+  // Bezpieczne budowanie adresu
+  const safeImie = String(orderData?.imie || '')
+  const safeNazwisko = String(orderData?.nazwisko || '')
+  const safeUlica = String(orderData?.adres?.ulica || '')
+  const safeKod = String(orderData?.adres?.kodPocztowy || '')
+  const safeMiasto = String(orderData?.adres?.miasto || '')
+  const safeTelefon = String(orderData?.telefon || '')
 
-  // Pełny adres jako string
-  const adresDostawy = `${orderData.imie} ${orderData.nazwisko}\n${orderData.adres.ulica}\n${orderData.adres.kodPocztowy} ${orderData.adres.miasto}\nTel: ${orderData.telefon}`
+  const adresDostawy = `${safeImie} ${safeNazwisko}\n${safeUlica}\n${safeKod} ${safeMiasto}\nTel: ${safeTelefon}`
 
   const url = `https://api.airtable.com/v0/${BASE_ID}/Zamowienia`
 
-  // Payload dla Airtable - klucze MUSZĄ pasować DOKŁADNIE do nazw kolumn
+  // Bezpieczne wartości liczbowe
+  const safeTotal = Number(orderData?.total) || 0
+  const safeSubtotal = Number(orderData?.subtotal) || 0
+  const safeShipping = Number(orderData?.shipping) || 0
+  const safePaymentFee = Number(orderData?.paymentFee) || 0
+  const safeDiscountAmount = Number(orderData?.discountAmount) || 0
+
+  // Payload dla Airtable - wszystko jako String() dla bezpieczeństwa
   const airtablePayload = {
     fields: {
-      "EmailGosc": orderData.email,
+      "EmailGosc": String(orderData?.email || ''),
       "AdresDostawy": adresDostawy,
-      "MetodaPlatnosci": orderData.metodaPlatnosci,
-      "KwotaCalkowita": orderData.total,
+      "MetodaPlatnosci": String(orderData?.metodaPlatnosci || 'przelew'),
+      "KwotaCalkowita": safeTotal,
       "Status": "nowe",
-      "PodsumowanieKoszyka": summary,  // <-- TO MUSI BYĆ WYPEŁNIONE
-      "Notatki": notes,                 // <-- I TO
-      "UzytyKodRabatowy": orderData.uzyty_kod_rabatowy || '',
-      "Subtotal": orderData.subtotal,
-      "KosztDostawy": orderData.shipping,
-      "OplataPobranie": orderData.paymentFee,
-      "KwotaRabatu": orderData.discountAmount
+      "PodsumowanieKoszyka": safeSummary,
+      "Notatki": safeNotes,
+      "UzytyKodRabatowy": String(orderData?.uzyty_kod_rabatowy || ''),
+      "Subtotal": safeSubtotal,
+      "KosztDostawy": safeShipping,
+      "OplataPobranie": safePaymentFee,
+      "KwotaRabatu": safeDiscountAmount
     }
   }
 
-  // 🔥 CRITICAL: Sprawdź co DOKŁADNIE wysyłamy do Airtable
-  console.log('🔥🔥🔥 WYSYŁAM DO AIRTABLE 🔥🔥🔥')
-  console.log('🔥 PodsumowanieKoszyka w payload:', airtablePayload.fields.PodsumowanieKoszyka)
-  console.log('🔥 Notatki w payload:', airtablePayload.fields.Notatki)
-  console.log('🔥 Full payload:', JSON.stringify(airtablePayload, null, 2))
+  console.log('--- AIRTABLE PAYLOAD ---')
+  console.log('PodsumowanieKoszyka:', airtablePayload.fields.PodsumowanieKoszyka)
+  console.log('Notatki:', airtablePayload.fields.Notatki)
 
   try {
     const response = await fetch(url, {
