@@ -169,49 +169,61 @@ export default function CheckoutPage() {
   // BRUTALNY handler formularza
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault() // LINIA 1: Zawsze blokuj domyślne zachowanie
-    if (isProcessing) return // LINIA 2: Jeśli już przetwarzamy - WYJDŹ
-    setIsProcessing(true) // LINIA 3: Zablokuj na zawsze (do przekierowania)
 
-    // Teraz wywołaj walidację react-hook-form
-    handleSubmit(onSubmit)()
+    // 🔥 DEBUG: Czy handleFormSubmit w ogóle się wywołuje?
+    console.log('🔥 HANDLE FORM SUBMIT WYWOŁANY!')
+    console.log('🔥 isProcessing:', isProcessing)
+    console.log('🔥 items w momencie submit:', items.length, 'produktów')
+    console.log('🔥 items data:', JSON.stringify(items, null, 2))
+
+    if (isProcessing) {
+      console.log('🔥 PRZERWANO - już przetwarzamy')
+      return
+    }
+    setIsProcessing(true)
+
+    // 🔥 DEBUG: Czy handleSubmit się wywołuje?
+    console.log('🔥 Wywołuję handleSubmit(onSubmit)...')
+
+    // Wywołaj walidację react-hook-form
+    await handleSubmit(
+      // onValid - wywoła się gdy walidacja przejdzie
+      (data) => {
+        console.log('✅ Walidacja PRZESZŁA, wywołuję onSubmit')
+        return onSubmit(data)
+      },
+      // onInvalid - wywoła się gdy walidacja NIE przejdzie
+      (errors) => {
+        console.log('❌ Walidacja NIE PRZESZŁA!')
+        console.log('❌ Błędy:', JSON.stringify(errors, null, 2))
+        setIsProcessing(false)
+      }
+    )()
   }
 
   const onSubmit = async (data: CheckoutFormData) => {
-    // Dodatkowy bezpiecznik na wypadek obejścia handleFormSubmit
-    if (isProcessing === false) {
-      setIsProcessing(true)
-    }
+    console.log('🚀 ON SUBMIT WYWOŁANY!')
 
     // CRITICAL: Sprawdź czy mamy produkty
     console.log('🛒 ITEMS LENGTH:', items.length)
-    console.log('🛒 ITEMS RAW:', JSON.stringify(items))
 
     if (items.length === 0) {
       console.error('❌ BŁĄD: Koszyk jest pusty w momencie submit!')
-      alert('Błąd: Koszyk jest pusty')
+      alert('Błąd: Koszyk jest pusty!')
       setIsProcessing(false)
       return
     }
 
-    // Tworzenie czytelnego podsumowania koszyka dla n8n/maili
-    // Format: "Nazwa Produktu x2 (79.98 zł)"
+    // 🔥 DEBUG KOSZYKA (Browser) - TO MUSI SIĘ POJAWIĆ W KONSOLI F12
     const podsumowanieKoszyka = items
-      .map(item => {
-        const lineItem = `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`
-        console.log('📦 Line item:', lineItem)
-        return lineItem
-      })
+      .map(item => `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`)
       .join('\n')
 
-    const notatki = data.uwagi?.trim() || ''
-
-    // DEBUG - BARDZO WYRAŹNE logowanie
-    console.log('═══════════════════════════════════════')
-    console.log('📋 PODSUMOWANIE KOSZYKA:')
+    console.log('🔥 DEBUG KOSZYKA (Browser):')
     console.log(podsumowanieKoszyka)
-    console.log('───────────────────────────────────────')
-    console.log('📝 NOTATKI:', notatki || '(puste)')
-    console.log('═══════════════════════════════════════')
+
+    const notatki = data.uwagi?.trim() || ''
+    console.log('🔥 DEBUG NOTATKI (Browser):', notatki || '(puste)')
 
     // Payload zgodny z wymaganiami n8n webhook
     const payload = {
