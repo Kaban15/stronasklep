@@ -182,18 +182,36 @@ export default function CheckoutPage() {
       setIsProcessing(true)
     }
 
+    // CRITICAL: Sprawdź czy mamy produkty
+    console.log('🛒 ITEMS LENGTH:', items.length)
+    console.log('🛒 ITEMS RAW:', JSON.stringify(items))
+
+    if (items.length === 0) {
+      console.error('❌ BŁĄD: Koszyk jest pusty w momencie submit!')
+      alert('Błąd: Koszyk jest pusty')
+      setIsProcessing(false)
+      return
+    }
+
     // Tworzenie czytelnego podsumowania koszyka dla n8n/maili
     // Format: "Nazwa Produktu x2 (79.98 zł)"
-    const podsumowanieKoszyka = items.length > 0
-      ? items.map(item => `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`).join('\n')
-      : 'Brak produktów'
+    const podsumowanieKoszyka = items
+      .map(item => {
+        const lineItem = `${item.nazwa} x${item.ilosc} (${(item.cena * item.ilosc).toFixed(2)} zł)`
+        console.log('📦 Line item:', lineItem)
+        return lineItem
+      })
+      .join('\n')
 
-    // DEBUG - loguj do konsoli przeglądarki
-    console.log('=== CHECKOUT DEBUG ===')
-    console.log('Items:', items)
-    console.log('PodsumowanieKoszyka:', podsumowanieKoszyka)
-    console.log('Notatki (uwagi):', data.uwagi)
-    console.log('======================')
+    const notatki = data.uwagi?.trim() || ''
+
+    // DEBUG - BARDZO WYRAŹNE logowanie
+    console.log('═══════════════════════════════════════')
+    console.log('📋 PODSUMOWANIE KOSZYKA:')
+    console.log(podsumowanieKoszyka)
+    console.log('───────────────────────────────────────')
+    console.log('📝 NOTATKI:', notatki || '(puste)')
+    console.log('═══════════════════════════════════════')
 
     // Payload zgodny z wymaganiami n8n webhook
     const payload = {
@@ -223,13 +241,14 @@ export default function CheckoutPage() {
       discountPercent: discount ? discount.value : 0,
       shipping: Number(shippingCost),
       paymentFee: Number(paymentFee),
-      Notatki: data.uwagi || ''
+      Notatki: notatki
     }
 
-    // DEBUG - loguj cały payload
-    console.log('=== PAYLOAD DO WYSŁANIA ===')
-    console.log(JSON.stringify(payload, null, 2))
-    console.log('===========================')
+    // DEBUG - loguj KRYTYCZNE pola przed wysłaniem
+    console.log('🚀 WYSYŁAM DO API:')
+    console.log('   PodsumowanieKoszyka:', payload.PodsumowanieKoszyka)
+    console.log('   Notatki:', payload.Notatki)
+    console.log('   produkty count:', payload.produkty.length)
 
     try {
       const response = await fetch('/api/zamowienie', {
