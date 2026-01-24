@@ -228,3 +228,121 @@ export async function getDiscountCode(code: string): Promise<DiscountCode | null
     value: record.fields.Wartosc || 0
   }
 }
+
+// ============================================
+// TWORZENIE ZAMÓWIENIA W AIRTABLE
+// ============================================
+
+export interface OrderData {
+  imie: string
+  nazwisko: string
+  email: string
+  telefon: string
+  adres: {
+    ulica: string
+    kodPocztowy: string
+    miasto: string
+  }
+  metodaPlatnosci: 'przelew' | 'przy_odbiorze'
+  produkty: Array<{
+    id: string
+    nazwa: string
+    ilosc: number
+    cena: number
+  }>
+  total: number
+  subtotal: number
+  shipping: number
+  paymentFee: number
+  discountAmount: number
+  discountPercent: number
+  uzyty_kod_rabatowy: string
+  Notatki: string
+  PodsumowanieKoszyka: string
+}
+
+export interface CreateOrderResult {
+  success: boolean
+  id?: string
+  numerZamowienia?: number
+  error?: string
+}
+
+export async function createOrder(orderData: OrderData): Promise<CreateOrderResult> {
+  // Budowanie podsumowania koszyka (backup jeśli nie przyszło z frontu)
+  const summary = orderData.PodsumowanieKoszyka || orderData.produkty
+    .map(p => `${p.nazwa} x${p.ilosc} (${(p.cena * p.ilosc).toFixed(2)} zł)`)
+    .join('\n')
+
+  const notes = orderData.Notatki || ''
+
+  // Pełny adres jako string
+  const adresDostawy = `${orderData.imie} ${orderData.nazwisko}\n${orderData.adres.ulica}\n${orderData.adres.kodPocztowy} ${orderData.adres.miasto}\nTel: ${orderData.telefon}`
+
+  // DEBUG: Loguj przed wysłaniem
+  console.log('--- DEBUG AIRTABLE PAYLOAD ---')
+  console.log('PodsumowanieKoszyka:', summary)
+  console.log('Notatki:', notes)
+  console.log('KwotaCalkowita:', orderData.total)
+  console.log('AdresDostawy:', adresDostawy)
+  console.log('------------------------------')
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/Zamowienia`
+
+  // Payload dla Airtable - klucze MUSZĄ pasować do nazw kolumn
+  const airtablePayload = {
+    fields: {
+      "EmailGosc": orderData.email,
+      "AdresDostawy": adresDostawy,
+      "MetodaPlatnosci": orderData.metodaPlatnosci,
+      "KwotaCalkowita": orderData.total,
+      "Status": "nowe",
+      "PodsumowanieKoszyka": summary,
+      "Notatki": notes,
+      "KodRabatowy": orderData.uzyty_kod_rabatowy || '',
+      "Subtotal": orderData.subtotal,
+      "KosztDostawy": orderData.shipping,
+      "OplataPobranie": orderData.paymentFee,
+      "KwotaRabatu": orderData.discountAmount
+    }
+  }
+
+  console.log('--- FULL AIRTABLE PAYLOAD ---')
+  console.log(JSON.stringify(airtablePayload, null, 2))
+  console.log('-----------------------------')
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(airtablePayload)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Błąd tworzenia zamówienia w Airtable:', errorText)
+      return {
+        success: false,
+        error: `Airtable error: ${response.status} - ${errorText}`
+      }
+    }
+
+    const result = await response.json()
+
+    console.log('--- AIRTABLE RESPONSE ---')
+    console.log('Created record ID:', result.id)
+    console.log('-------------------------')
+
+    return {
+      success: true,
+      id: result.id,
+      numerZamowienia: result.fields?.NumerZamowienia
+    }
+  } catch (error) {
+    console.error('Błąd createOrder:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
