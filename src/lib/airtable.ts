@@ -275,24 +275,28 @@ export async function createOrder(orderData: OrderData): Promise<CreateOrderResu
   console.log('🔥 orderData.Notatki:', orderData.Notatki)
   console.log('🔥 orderData.produkty:', JSON.stringify(orderData.produkty))
 
-  // CRITICAL: Buduj summary ZAWSZE z produktów jeśli przyszły
+  // CRITICAL: Buduj summary - WYMUŚ wartość do Airtable
   let summary = ''
   if (orderData.PodsumowanieKoszyka && orderData.PodsumowanieKoszyka.trim() !== '') {
     summary = orderData.PodsumowanieKoszyka
-    console.log('✅ Używam PodsumowanieKoszyka z inputu')
+    console.log('✅ Używam PodsumowanieKoszyka z inputu:', summary.substring(0, 50))
   } else if (orderData.produkty && orderData.produkty.length > 0) {
     summary = orderData.produkty
       .map(p => `${p.nazwa} x${p.ilosc} (${(p.cena * p.ilosc).toFixed(2)} zł)`)
       .join('\n')
     console.log('✅ Zbudowałem summary z produktów:', summary)
   } else {
-    summary = 'BRAK PRODUKTÓW - BŁĄD!'
-    console.error('❌ Brak produktów i brak PodsumowanieKoszyka!')
+    // DEBUG: Wymuś tekst żeby w Airtable było widać że coś nie działa
+    summary = `[DEBUG] Brak danych - produkty: ${orderData.produkty?.length || 0}, timestamp: ${new Date().toISOString()}`
+    console.error('❌ Brak produktów i brak PodsumowanieKoszyka! Używam debug string')
   }
 
   const notes = orderData.Notatki?.trim() || ''
-  console.log('🔥 Final summary:', summary)
-  console.log('🔥 Final notes:', notes)
+
+  console.log('🔥🔥🔥 FINAL VALUES FOR AIRTABLE 🔥🔥🔥')
+  console.log('🔥 summary length:', summary.length)
+  console.log('🔥 summary:', summary)
+  console.log('🔥 notes:', notes || '(empty)')
 
   // Pełny adres jako string
   const adresDostawy = `${orderData.imie} ${orderData.nazwisko}\n${orderData.adres.ulica}\n${orderData.adres.kodPocztowy} ${orderData.adres.miasto}\nTel: ${orderData.telefon}`

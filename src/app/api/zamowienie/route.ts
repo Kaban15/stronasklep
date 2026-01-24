@@ -5,12 +5,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // DEBUG: Loguj kluczowe pola
-    console.log('=== ZAMÓWIENIE DEBUG ===');
-    console.log('PodsumowanieKoszyka:', body.PodsumowanieKoszyka);
-    console.log('Notatki:', body.Notatki);
-    console.log('Total:', body.total);
-    console.log('========================');
+    // 🔥🔥🔥 MEGA DEBUG - LOGUJ WSZYSTKO 🔥🔥🔥
+    console.log('🔥🔥🔥 API ROUTE /api/zamowienie WYWOŁANE 🔥🔥🔥');
+    console.log('🔥 RAW BODY KEYS:', Object.keys(body));
+    console.log('🔥 body.PodsumowanieKoszyka:', body.PodsumowanieKoszyka);
+    console.log('🔥 body.Notatki:', body.Notatki);
+    console.log('🔥 body.produkty length:', body.produkty?.length);
+    console.log('🔥 FULL BODY:', JSON.stringify(body, null, 2));
+
+    // CRITICAL: Wymuś wartości - jeśli puste, ustaw debug string
+    const podsumowanie = body.PodsumowanieKoszyka || 'BACKEND: brak PodsumowanieKoszyka z frontu';
+    const notatki = body.Notatki || '';
+
+    console.log('🔥 FINAL podsumowanie:', podsumowanie);
+    console.log('🔥 FINAL notatki:', notatki);
 
     // 1. ZAPISZ BEZPOŚREDNIO DO AIRTABLE
     const orderData: OrderData = {
@@ -20,7 +28,7 @@ export async function POST(request: Request) {
       telefon: body.telefon,
       adres: body.adres,
       metodaPlatnosci: body.metodaPlatnosci,
-      produkty: body.produkty,
+      produkty: body.produkty || [],
       total: body.total,
       subtotal: body.subtotal,
       shipping: body.shipping,
@@ -28,9 +36,12 @@ export async function POST(request: Request) {
       discountAmount: body.discountAmount || 0,
       discountPercent: body.discountPercent || 0,
       uzyty_kod_rabatowy: body.uzyty_kod_rabatowy || '',
-      Notatki: body.Notatki || '',
-      PodsumowanieKoszyka: body.PodsumowanieKoszyka || ''
+      Notatki: notatki,
+      PodsumowanieKoszyka: podsumowanie
     };
+
+    console.log('🔥 orderData.PodsumowanieKoszyka:', orderData.PodsumowanieKoszyka);
+    console.log('🔥 orderData.Notatki:', orderData.Notatki);
 
     const airtableResult = await createOrder(orderData);
 
