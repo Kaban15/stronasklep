@@ -289,7 +289,7 @@ export async function createOrder(orderData: OrderData): Promise<CreateOrderResu
 
   const url = `https://api.airtable.com/v0/${BASE_ID}/Zamowienia`
 
-  // Payload dla Airtable - klucze MUSZĄ pasować do nazw kolumn
+  // Payload dla Airtable - klucze MUSZĄ pasować DOKŁADNIE do nazw kolumn
   const airtablePayload = {
     fields: {
       "EmailGosc": orderData.email,
@@ -299,7 +299,7 @@ export async function createOrder(orderData: OrderData): Promise<CreateOrderResu
       "Status": "nowe",
       "PodsumowanieKoszyka": summary,
       "Notatki": notes,
-      "KodRabatowy": orderData.uzyty_kod_rabatowy || '',
+      "UzytyKodRabatowy": orderData.uzyty_kod_rabatowy || '',
       "Subtotal": orderData.subtotal,
       "KosztDostawy": orderData.shipping,
       "OplataPobranie": orderData.paymentFee,
