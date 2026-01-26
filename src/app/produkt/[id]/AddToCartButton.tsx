@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useCart } from '@/hooks/use-cart'
 import { usePostHog } from 'posthog-js/react'
 import Link from 'next/link'
@@ -16,9 +16,10 @@ interface Props {
   }
   niedostepny: boolean
   maxIlosc: number
+  compact?: boolean // For mobile sticky bar - simplified version
 }
 
-export default function AddToCartButton({ produkt, niedostepny, maxIlosc }: Props) {
+export default function AddToCartButton({ produkt, niedostepny, maxIlosc, compact = false }: Props) {
   const { addItem } = useCart()
   const posthog = usePostHog()
   const [ilosc, setIlosc] = useState(1)
@@ -50,7 +51,8 @@ export default function AddToCartButton({ produkt, niedostepny, maxIlosc }: Prop
         product_name: produkt.nazwa,
         price: produkt.cena,
         quantity: ilosc,
-        total_value: produkt.cena * ilosc
+        total_value: produkt.cena * ilosc,
+        source: compact ? 'mobile_sticky' : 'product_page'
       })
     }
 
@@ -61,6 +63,51 @@ export default function AddToCartButton({ produkt, niedostepny, maxIlosc }: Prop
     }, 3000)
   }
 
+  // Compact version for mobile sticky bar
+  if (compact) {
+    if (dodano) {
+      return (
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex-1"
+        >
+          <Link
+            href="/koszyk"
+            className="flex items-center justify-center gap-2 h-12 bg-gray-900 text-white px-4 rounded-xl font-semibold text-sm"
+          >
+            <Check className="w-4 h-4" />
+            <span>Do koszyka</span>
+          </Link>
+        </motion.div>
+      )
+    }
+
+    return (
+      <motion.button
+        onClick={handleDodaj}
+        disabled={niedostepny}
+        whileTap={niedostepny ? {} : { scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+        className={`flex-1 h-12 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+          niedostepny
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-emerald-600 text-white active:bg-emerald-700'
+        }`}
+      >
+        {niedostepny ? (
+          'Niedostępne'
+        ) : (
+          <>
+            <ShoppingCart className="w-4 h-4" />
+            <span>Dodaj</span>
+          </>
+        )}
+      </motion.button>
+    )
+  }
+
+  // Full version - with quantity selector
   if (dodano) {
     return (
       <motion.div
@@ -134,14 +181,14 @@ export default function AddToCartButton({ produkt, niedostepny, maxIlosc }: Prop
         )}
       </div>
 
-      {/* Przycisk dodaj do koszyka */}
+      {/* Przycisk dodaj do koszyka - Full width, huge */}
       <motion.button
         onClick={handleDodaj}
         disabled={niedostepny}
         whileHover={niedostepny ? {} : { scale: 1.02 }}
         whileTap={niedostepny ? {} : { scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-        className={`w-full h-14 rounded-xl font-semibold text-base transition-colors flex items-center justify-center gap-3 ${
+        className={`w-full h-16 rounded-xl font-semibold text-base transition-colors flex items-center justify-center gap-3 ${
           niedostepny
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20'

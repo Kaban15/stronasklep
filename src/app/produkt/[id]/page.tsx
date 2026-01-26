@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import AddToCartButton from './AddToCartButton'
 import ProductTabs from './ProductTabs'
 import CrossSellWidget from '@/components/product/CrossSellWidget'
-import { Truck, ShieldCheck, Package, ChevronRight } from 'lucide-react'
+import { Truck, ShieldCheck, Package, ChevronRight, PackageCheck } from 'lucide-react'
 
 // ISR: odświeżanie co 10 minut
 export const revalidate = 600
@@ -85,11 +85,12 @@ export default async function ProduktPage({ params }: Props) {
 
   const zdjecieUrl = produkt.zdjecia?.[0]?.url || '/placeholder.png'
   const niedostepny = produkt.iloscMagazynowa <= 0
+  const lowStock = !niedostepny && produkt.iloscMagazynowa <= 3
 
   // Cena jednostkowa - podstawowa
   const cenaJednostkowa = `${produkt.cena.toFixed(2)} zł / szt.`
 
-  // Smart Efficiency - cena za jednostkę (np. pranie)
+  // Smart Efficiency - cena za jednostkę (np. pranie) - logika z ProductCard
   const hasEfficiency = produkt.efficiency && produkt.efficiency > 0 && produkt.unit
   const pricePerUnit = hasEfficiency ? (produkt.cena / produkt.efficiency!).toFixed(2) : null
   const unitPriceText = hasEfficiency && pricePerUnit
@@ -130,12 +131,12 @@ export default async function ProduktPage({ params }: Props) {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 lg:py-12">
+      <div className="container mx-auto px-4 py-6 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
 
           {/* Lewa kolumna - Zdjęcie */}
           <div className="lg:sticky lg:top-8 lg:self-start">
-            <div className="relative aspect-square bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
+            <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               {produkt.zdjecia?.[0] ? (
                 <Image
                   src={zdjecieUrl}
@@ -152,11 +153,11 @@ export default async function ProduktPage({ params }: Props) {
               )}
 
               {/* Badge Zaufania - Import DE */}
-              <span className="absolute top-4 right-4 bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded shadow-md">
+              <span className="absolute top-4 right-4 bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-md border border-gray-100">
                 Import DE 🇩🇪
               </span>
 
-              {/* Badge niedostępny */}
+              {/* Badge niedostępny / wyprzedane */}
               {niedostepny && (
                 <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
                   <span className="bg-gray-600 text-white px-6 py-3 rounded-lg text-sm font-semibold">
@@ -164,17 +165,24 @@ export default async function ProduktPage({ params }: Props) {
                   </span>
                 </div>
               )}
+
+              {/* Low stock badge */}
+              {lowStock && (
+                <span className="absolute bottom-4 left-4 bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+                  Ostatnie {produkt.iloscMagazynowa} szt.
+                </span>
+              )}
             </div>
 
-            {/* Miniaturki - placeholder dla przyszłych zdjęć */}
+            {/* Miniaturki - jeśli jest więcej niż jedno zdjęcie */}
             {produkt.zdjecia && produkt.zdjecia.length > 1 && (
               <div className="flex gap-3 mt-4">
                 {produkt.zdjecia.slice(0, 4).map((zdjecie, index) => (
                   <button
                     key={index}
                     className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                      index === 0 ? 'border-gray-900' : 'border-gray-200 hover:border-gray-400'
-                    } transition-colors`}
+                      index === 0 ? 'border-emerald-600' : 'border-gray-200 hover:border-gray-400'
+                    } transition-colors bg-white`}
                   >
                     <Image
                       src={zdjecie.url}
@@ -188,73 +196,60 @@ export default async function ProduktPage({ params }: Props) {
             )}
           </div>
 
-          {/* Prawa kolumna - Informacje */}
-          <div className="lg:py-4">
-            {/* Tagi */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="bg-white text-slate-800 text-xs font-bold px-2 py-1 rounded shadow-sm border border-gray-100">
-                Import DE 🇩🇪
-              </span>
-              <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
-                {kategoriaDisplay}
-              </span>
-              {!niedostepny && produkt.iloscMagazynowa <= 5 && (
-                <span className="bg-amber-100 text-amber-700 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded">
-                  Ostatnie sztuki
-                </span>
-              )}
-            </div>
+          {/* Prawa kolumna - Informacje (Sticky na desktop) */}
+          <div className="lg:sticky lg:top-8 lg:self-start">
+            {/* Kategoria */}
+            <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+              {kategoriaDisplay}
+            </span>
 
-            {/* Tytuł */}
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            {/* Tytuł - H1, bold */}
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mt-2 mb-4 leading-tight">
               {produkt.nazwa}
             </h1>
 
-            {/* Opis krótki */}
-            {produkt.opis && (
-              <p className="text-gray-600 text-base leading-relaxed mb-6 line-clamp-3">
-                {produkt.opis}
-              </p>
-            )}
+            {/* Stock Badge */}
+            <div className="mb-6">
+              {niedostepny ? (
+                <span className="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-gray-400" />
+                  Wyprzedane
+                </span>
+              ) : lowStock ? (
+                <span className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-sm font-medium px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  Ostatnie sztuki!
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 text-sm font-medium px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Dostępne ({produkt.iloscMagazynowa} szt.)
+                </span>
+              )}
+            </div>
 
-            {/* Cena */}
-            <div className="mb-8 pb-8 border-b border-gray-200">
-              <div className="flex items-baseline gap-3">
+            {/* Sekcja Ceny - Critical UX */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex items-baseline gap-2">
                 <span className="text-4xl md:text-5xl font-bold text-gray-900">
                   {produkt.cena.toFixed(2)}
                 </span>
-                <span className="text-2xl font-semibold text-gray-900">zł</span>
+                <span className="text-xl font-semibold text-gray-900">zł</span>
               </div>
+              {/* Unit Price - Smart Efficiency (Critical UX feature) */}
               {unitPriceText ? (
-                <span className="text-base text-emerald-600 font-medium mt-1 block">
+                <p className="text-base text-emerald-600 font-semibold mt-2">
                   {unitPriceText}
-                </span>
+                </p>
               ) : (
-                <span className="text-sm text-gray-400 mt-1 block">
+                <p className="text-sm text-gray-500 mt-1">
                   {cenaJednostkowa}
-                </span>
+                </p>
               )}
             </div>
 
-            {/* Dostępność */}
+            {/* Add to Cart Button - Full width, huge */}
             <div className="mb-6">
-              {niedostepny ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <div className="w-2 h-2 rounded-full bg-gray-400" />
-                  <span className="text-sm font-medium">Produkt chwilowo niedostępny</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-emerald-600">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-sm font-medium">
-                    Dostępne: {produkt.iloscMagazynowa} szt.
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Akcje - AddToCart */}
-            <div className="mb-8">
               <AddToCartButton
                 produkt={{
                   id: produkt.id,
@@ -267,27 +262,33 @@ export default async function ProduktPage({ params }: Props) {
               />
             </div>
 
-            {/* Trust badges */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                  <Truck className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Wysyłka 24h</p>
-                  <p className="text-xs text-gray-500">Szybka realizacja</p>
-                </div>
+            {/* Trust Section - 3 features in a row */}
+            <div className="flex flex-wrap items-center justify-between gap-4 py-4 px-2 mb-6 border-y border-gray-100">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-gray-400" />
+                <span className="text-xs text-gray-500">Oryginalna chemia z Niemiec</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                  <ShieldCheck className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Oryginalny produkt</p>
-                  <p className="text-xs text-gray-500">Import z Niemiec</p>
-                </div>
+              <div className="flex items-center gap-2">
+                <Truck className="w-5 h-5 text-gray-400" />
+                <span className="text-xs text-gray-500">Wysyłka w 24h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PackageCheck className="w-5 h-5 text-gray-400" />
+                <span className="text-xs text-gray-500">Pancerne pakowanie</span>
               </div>
             </div>
+
+            {/* Product Description - prose styling */}
+            {produkt.opis && (
+              <div className="mb-6">
+                <h2 className="text-sm font-semibold text-gray-900 mb-2">Opis produktu</h2>
+                <div className="prose prose-sm prose-gray max-w-none">
+                  <p className="text-gray-600 leading-relaxed">
+                    {produkt.opis}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Cross-sell widget */}
             <div className="mt-6">
@@ -308,10 +309,10 @@ export default async function ProduktPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Mobile sticky button */}
+      {/* Mobile sticky bottom bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-40">
         <div className="flex items-center justify-between gap-4">
-          <div>
+          <div className="flex-shrink-0">
             <p className="text-2xl font-bold text-gray-900">{produkt.cena.toFixed(2)} zł</p>
             {unitPriceText ? (
               <p className="text-xs text-emerald-600 font-medium">{unitPriceText}</p>
@@ -319,16 +320,17 @@ export default async function ProduktPage({ params }: Props) {
               <p className="text-xs text-gray-500">{cenaJednostkowa}</p>
             )}
           </div>
-          <button
-            disabled={niedostepny}
-            className={`flex-1 max-w-[200px] h-12 rounded-xl font-semibold text-sm transition-all ${
-              niedostepny
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-emerald-600 text-white active:scale-[0.98]'
-            }`}
-          >
-            {niedostepny ? 'Niedostępne' : 'Do koszyka'}
-          </button>
+          <AddToCartButton
+            produkt={{
+              id: produkt.id,
+              nazwa: produkt.nazwa,
+              cena: produkt.cena,
+              zdjecie: zdjecieUrl
+            }}
+            niedostepny={niedostepny}
+            maxIlosc={Math.max(1, produkt.iloscMagazynowa)}
+            compact
+          />
         </div>
       </div>
 
